@@ -1,0 +1,13 @@
+name: StackMachine
+version: 0.1.0
+
+authors:
+  - Leonard Schuetz <leni.schuetz@me.com>
+
+targets:
+  StackMachine:
+    main: src/StackMachine.cr
+
+crystal: 0.20.4
+
+license: MIT
