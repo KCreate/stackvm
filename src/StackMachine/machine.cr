@@ -77,6 +77,10 @@ module StackMachine
       end
 
       case type = InstructionType.new data
+      when InstructionType::Equal
+        return equal
+      when InstructionType::Jump
+        return jump
       when InstructionType::Write
         return write
       when InstructionType::Read
@@ -161,6 +165,48 @@ module StackMachine
       end
 
       load value
+    end
+
+    # Compares the top two values on the stack
+    def equal
+      right = pop
+      left = pop
+
+      unless left.class == right.class
+        load false
+      end
+
+      load left == right
+    end
+
+    # Jumps to a given location in memory
+    def jump
+      target = pop
+      should_jump = pop
+
+      unless should_jump.is_a? Bool
+        raise VMError.new "Expected jump switch to be a bool"
+      end
+
+      # Don't jump if should_jump is set to false
+      # and increment the instruction pointer to hop over the jump
+      unless should_jump
+        return
+      end
+
+      # Make sure the target is a Float64
+      unless target.is_a? Float64
+        raise VMError.new "Expected target address to be a Numeric"
+      end
+
+      target = target.to_i64
+
+      # Check for out-of-bounds write
+      if target < 0 || target > @memory.size - 1
+        raise VMError.new "Illegal memory read at #{target}"
+      end
+
+      @ip = target
     end
 
     # Loads a value onto the stack

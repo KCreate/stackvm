@@ -5,6 +5,8 @@ module StackMachine
   # Instruction Types
   enum InstructionType : UInt16
     Halt
+    Equal
+    Jump
     Write
     Read
     Print

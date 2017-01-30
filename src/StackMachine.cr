@@ -4,12 +4,15 @@ module StackMachine
   vm = VM.new
 
   instructions = [
-    Instruction.new(200),
-    Instruction.new(20),
-    Instruction.new(InstructionType::Write),
+    Instruction.new(false),
+    Instruction.new(6),
+    Instruction.new(InstructionType::Jump),
 
-    Instruction.new(20),
-    Instruction.new(InstructionType::Read),
+    Instruction.new(200),
+    Instruction.new(0),
+    Instruction.new(InstructionType::Print),
+
+    Instruction.new(300),
     Instruction.new(0),
     Instruction.new(InstructionType::Print),
 
