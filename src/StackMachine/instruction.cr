@@ -1,51 +1,41 @@
+require "./types.cr"
+
 module StackMachine
 
   # Instruction Types
   enum InstructionType : UInt16
-    Add
-    Sub
-    Mul
-    Div
-    Load
+    Halt
     Write
+    Read
     Print
 
-    def self.new(num : Int32)
+    def self.new(num)
       new num.to_u16
     end
   end
 
   # Instruction
-  #
-  # Contains two methods #header and #data
-  #
-  # The header identifies the content of the data part
-  # - header
-  #   0 - Signed 62-bit number
-  #   1 - Instruction
-  #   2 - Unsigned 62-bit number
-  #   3 - Undefined
   struct Instruction
-    @header : Tuple(Bool, Bool, Int64)
+    property instruction : Bool
+    property data : BaseType | InstructionType
 
-    def initialize(instruction, signed, data : Int64)
-      @header = {instruction, signed, data}
+    def initialize(@instruction, @data)
     end
 
-    def self.new(instruction, signed, data)
-      new instruction, signed, data.to_i64
+    def self.new(type : InstructionType)
+      new true, type
+    end
+
+    def self.new(value)
+      new false, value
+    end
+
+    def self.new(value : Int32)
+      new false, value.to_f64
     end
 
     def instruction?
-      @header[0]
-    end
-
-    def signed?
-      @header[1]
-    end
-
-    def data
-      @header[2]
+      @instruction
     end
   end
 
