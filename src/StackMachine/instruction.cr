@@ -26,27 +26,26 @@ module StackMachine
   #   2 - Unsigned 62-bit number
   #   3 - Undefined
   struct Instruction
-    DATA_FIELDS = 0x3FFFFFFFFFFFFFFF
+    @header : Tuple(Bool, Bool, Int64)
 
-    property content : UInt64
-
-    def initialize(@content)
+    def initialize(instruction, signed, data : Int64)
+      @header = {instruction, signed, data}
     end
 
-    def self.new(header : UInt64, data : UInt64)
-      new (header << 62) | (data & DATA_FIELDS)
+    def self.new(instruction, signed, data)
+      new instruction, signed, data.to_i64
     end
 
-    def self.new(header, data)
-      new header.to_u64, data.to_u64
+    def instruction?
+      @header[0]
     end
 
-    def header
-      @content >> 62
+    def signed?
+      @header[1]
     end
 
     def data
-      @content & DATA_FIELDS
+      @header[2]
     end
   end
 
