@@ -1,13 +1,18 @@
 module StackMachine
 
   # Instruction Types
-  enum InstructionType
+  enum InstructionType : UInt16
     Add
     Sub
     Mul
     Div
     Load
     Write
+    Print
+
+    def self.new(num : Int32)
+      new num.to_u16
+    end
   end
 
   # Instruction

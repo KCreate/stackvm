@@ -33,4 +33,23 @@ describe StackMachine::Instruction do
     inst6.data.should eq(200_000_000_000_000)
   end
 
+  it "can create instructions from numbers" do
+    nums = [0, 1, 2, 3, 4, 5, 6]
+    types = [
+      StackMachine::InstructionType::Add,
+      StackMachine::InstructionType::Sub,
+      StackMachine::InstructionType::Mul,
+      StackMachine::InstructionType::Div,
+      StackMachine::InstructionType::Load,
+      StackMachine::InstructionType::Write,
+      StackMachine::InstructionType::Print
+    ]
+
+    equal = [] of Bool
+    nums.each_with_index do |num, index|
+      equal << (StackMachine::InstructionType.new(num) == types[index])
+    end
+    equal.should eq([true, true, true, true, true, true, true])
+  end
+
 end
