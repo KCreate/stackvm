@@ -1,5 +1,6 @@
 require "./instruction.cr"
 require "./program.cr"
+require "./tool.cr"
 require "readline"
 
 module StackMachine
@@ -10,6 +11,8 @@ module StackMachine
 
   # Virtual Machine
   class VM
+    include Tool(VMError)
+
     DEFAULT_MEMORY_SIZE = 1024
 
     property running : Bool # status
@@ -45,11 +48,7 @@ module StackMachine
 
       while @running
         inst = @memory[@ip]
-
-        unless inst.is_a? Instruction
-          raise VMError.new "Expected instruction at memory address #{@ip}"
-        end
-
+        assert_type inst, Instruction, "Expected instruction at memory address #{@ip}"
         @ip += 1
         last = execute inst
       end
@@ -64,17 +63,13 @@ module StackMachine
 
       # Push to the stack if this is not an instruction
       unless instruction.instruction?
-        if data.is_a? BaseType
+        assert_type data, BaseType, "Expected instruction data to be a base type, not an instruction identifier" do
           return load data
-        else
-          raise VMError.new "Expected instruction data to be a base type, not an instruction identifier"
         end
       end
 
       # Make sure the data of the instruction is a Float64
-      unless data.is_a? InstructionType
-        raise VMError.new "Invalid instruction data"
-      end
+      assert_type data, InstructionType, "Invalid instruction data"
 
       case type = InstructionType.new data
       when InstructionType::Equal
@@ -99,12 +94,9 @@ module StackMachine
       target = pop
       value = pop
 
-      # Make sure the target is a Float64
-      unless target.is_a? Float64
-        raise VMError.new "Expected file handle to be a Numeric"
+      assert_type target, Float64, "Expected file handle to be a Numeric" do
+        target = target.to_i32
       end
-
-      target = target.to_i32
 
       case target
       when 0
@@ -123,12 +115,9 @@ module StackMachine
       target = pop
       value = pop
 
-      # Make sure the target is a Float64
-      unless target.is_a? Float64
-        raise VMError.new "Expected target address to be a Numeric"
+      assert_type target, Float64, "Expected target address to be a Numeric" do
+        target = target.to_i32
       end
-
-      target = target.to_i32
 
       # Check for out-of-bounds write
       if target < 0 || target > @memory.size - 1
@@ -142,12 +131,9 @@ module StackMachine
     def read
       target = pop
 
-      # Make sure the target is a Float64
-      unless target.is_a? Float64
-        raise VMError.new "Expected target address to be a Numeric"
+      assert_type target, Float64, "Expected target address to be a Numeric" do
+        target = target.to_i32
       end
-
-      target = target.to_i32
 
       # Check for out-of-bounds write
       if target < 0 || target > @memory.size - 1
@@ -184,9 +170,7 @@ module StackMachine
       target = pop
       should_jump = pop
 
-      unless should_jump.is_a? Bool
-        raise VMError.new "Expected jump switch to be a bool"
-      end
+      assert_type should_jump, Bool, "Expected jump switch to be a bool"
 
       # Don't jump if should_jump is set to false
       # and increment the instruction pointer to hop over the jump
@@ -195,9 +179,7 @@ module StackMachine
       end
 
       # Make sure the target is a Float64
-      unless target.is_a? Float64
-        raise VMError.new "Expected target address to be a Numeric"
-      end
+      assert_type target, Float64, "Expected target address to be a Numeric"
 
       target = target.to_i64
 
