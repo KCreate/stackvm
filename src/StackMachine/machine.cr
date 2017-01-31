@@ -73,15 +73,15 @@ module StackMachine
 
       case type = InstructionType.new data
       when InstructionType::Equal
-        return equal
+        return instruction_equal
       when InstructionType::Jump
-        return jump
+        return instruction_jump
       when InstructionType::Write
-        return write
+        return instruction_write
       when InstructionType::Read
-        return read
+        return instruction_read
       when InstructionType::Print
-        return print
+        return instruction_print
       when InstructionType::Halt
         @running = false
       else
@@ -90,7 +90,7 @@ module StackMachine
     end
 
     # Invokes the print instruction
-    def print
+    def instruction_print
       target = pop
       value = pop
 
@@ -111,7 +111,7 @@ module StackMachine
     end
 
     # Writes a value to heap memory
-    def write
+    def instruction_write
       target = pop
       value = pop
 
@@ -128,7 +128,7 @@ module StackMachine
     end
 
     # Writes a value from heap memory
-    def read
+    def instruction_read
       target = pop
 
       assert_type target, Float64, "Expected target address to be a Numeric" do
@@ -154,7 +154,7 @@ module StackMachine
     end
 
     # Compares the top two values on the stack
-    def equal
+    def instruction_equal
       right = pop
       left = pop
 
@@ -166,7 +166,7 @@ module StackMachine
     end
 
     # Jumps to a given location in memory
-    def jump
+    def instruction_jump
       target = pop
       should_jump = pop
 
