@@ -188,6 +188,15 @@ module StackMachine
         raise VMError.new "Illegal memory read at #{target}"
       end
 
+      # Update the callstack
+      height = @memory[@memory.size - 1]
+      assert_type height, Float64, "Expected value at address #{@memory.size - 1} to be a Numeric"
+      target_offset = (@memory.size - 2) - height
+      target_offset = target_offset.to_i64
+      @memory[target_offset] = @ip.to_f64 + 1_f64
+      @memory[@memory.size - 1] = height + 1_f64
+
+      # Set the instruction pointer
       @ip = target
     end
 
