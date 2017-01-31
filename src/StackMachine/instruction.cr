@@ -7,6 +7,7 @@ module StackMachine
     Halt
     Equal
     Jump
+    Ret
     Write
     Read
     Print

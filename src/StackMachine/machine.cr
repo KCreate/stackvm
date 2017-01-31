@@ -49,8 +49,8 @@ module StackMachine
       while @running
         inst = @memory[@ip]
         assert_type inst, Instruction, "Expected instruction at memory address #{@ip}"
-        @ip += 1
         last = execute inst
+        @ip += 1
       end
 
       return last
@@ -76,6 +76,8 @@ module StackMachine
         return instruction_equal
       when InstructionType::Jump
         return instruction_jump
+      when InstructionType::Ret
+        return instruction_ret
       when InstructionType::Write
         return instruction_write
       when InstructionType::Read
@@ -197,7 +199,26 @@ module StackMachine
       @memory[@memory.size - 1] = height + 1_f64
 
       # Set the instruction pointer
-      @ip = target
+      # we subtracrt 1 because the machine will increment the instruction pointer after this cycle
+      @ip = target - 1
+    end
+
+    # Jumps to the address at the top of the callstack
+    # and removes the address from it
+    def instruction_ret
+
+      # Read the height of the callstack
+      height = @memory[@memory.size - 1]
+      assert_type height, Float64, "Expected value at address #{@memory.size - 1} to be a Numeric"
+      target_offset = (@memory.size - 1) - height
+      target_offset = target_offset.to_i64
+      return_address = @memory[target_offset]
+      @memory[target_offset] = nil
+      @memory[@memory.size - 1] = height - 1_f64
+
+      # Set the instruction pointer
+      assert_type return_address, Float64, "Expected value at address #{target_offset} to be a Numeric"
+      @ip = return_address.to_i64 - 1
     end
 
     # Loads a value onto the stack
