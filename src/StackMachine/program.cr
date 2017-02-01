@@ -1,17 +1,12 @@
-require "./instruction.cr"
-
 module StackMachine
-
   class Program
-    include Indexable(Instruction)
+    property data : Array(Int32)
 
-    property instructions : Array(Instruction)
-
-    def initialize(@instructions)
+    def initialize(@data = [] of Int32)
     end
 
-    delegate :unsafe_at, to: @instructions
-    delegate :size, to: @instructions
+    def <<(value : Int32)
+      @data << value
+    end
   end
-
 end

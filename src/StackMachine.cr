@@ -1,6 +1,8 @@
 require "./StackMachine/*"
 
 module StackMachine
+  include OP
+  include Reg
 
   STDOUT.sync = true
   STDIN.sync = true
@@ -8,28 +10,17 @@ module StackMachine
 
   vm = VM.new
 
-  instructions = [
-    Instruction.new(true),
-    Instruction.new(9),
-    Instruction.new(InstructionType::Jump),
+  program = Program{
+    PUSH, 25,
+    PUSH, 25,
+    ADD,
+    PTOP,
+    HALT, 0
+  }
 
-    Instruction.new("hello world"),
-    Instruction.new(0),
-    Instruction.new(InstructionType::Print),
-
-    Instruction.new(true),
-    Instruction.new(14),
-    Instruction.new(InstructionType::Jump),
-
-    Instruction.new(1023),
-    Instruction.new(InstructionType::Read),
-    Instruction.new(0),
-    Instruction.new(InstructionType::Print),
-    Instruction.new(InstructionType::Ret),
-
-    Instruction.new(InstructionType::Halt)
-  ]
-
-  vm.run instructions
+  vm.init(memory_size: 64) # 64 Int32 values
+  vm.run program
+  puts "Exited with #{vm.regs[EXT]}"
+  vm.clean
 
 end
