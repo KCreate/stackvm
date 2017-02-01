@@ -88,6 +88,16 @@ module StackMachine
       case instruction
       when ADD
         return op_add
+      when SUB
+        return op_sub
+      when MUL
+        return op_mul
+      when DIV
+        return op_div
+      when POW
+        return op_pow
+      when REM
+        return op_rem
       when PUSH
         return op_push
       when PTOP
@@ -137,6 +147,96 @@ module StackMachine
 
       # load the value onto the stack
       @memory[@regs[SP] + 1] = left + right
+      @regs[SP] += 1
+      @regs[IP] += 1
+    end
+
+    # Executes a SUB (0x01) instruction
+    #
+    # Pops off the top two values on the stack
+    # and pushes their difference (left - right)
+    @[AlwaysInline]
+    private def op_sub
+
+      # pop off two values
+      left = i_pop
+      right = i_pop
+      return unless left.is_a?(Int32) && right.is_a?(Int32)
+
+      # load the value onto the stack
+      @memory[@regs[SP] + 1] = left - right
+      @regs[SP] += 1
+      @regs[IP] += 1
+    end
+
+    # Executes a MUL (0x02) instruction
+    #
+    # Pops off the top two values on the stack
+    # and pushes their product
+    @[AlwaysInline]
+    private def op_mul
+
+      # pop off two values
+      left = i_pop
+      right = i_pop
+      return unless left.is_a?(Int32) && right.is_a?(Int32)
+
+      # load the value onto the stack
+      @memory[@regs[SP] + 1] = left * right
+      @regs[SP] += 1
+      @regs[IP] += 1
+    end
+
+    # Executes a DIV (0x03) instruction
+    #
+    # Pops off the top two values on the stack
+    # and pushes their quotient
+    @[AlwaysInline]
+    private def op_div
+
+      # pop off two values
+      left = i_pop
+      right = i_pop
+      return unless left.is_a?(Int32) && right.is_a?(Int32)
+
+      # load the value onto the stack
+      @memory[@regs[SP] + 1] = left / right
+      @regs[SP] += 1
+      @regs[IP] += 1
+    end
+
+    # Executes a POW (0x04) instruction
+    #
+    # Pops off the top two values on the stack
+    # and pushes their power
+    @[AlwaysInline]
+    private def op_pow
+
+      # pop off two values
+      left = i_pop
+      right = i_pop
+      return unless left.is_a?(Int32) && right.is_a?(Int32)
+
+      # load the value onto the stack
+      @memory[@regs[SP] + 1] = left ** right
+      @regs[SP] += 1
+      @regs[IP] += 1
+    end
+
+    # Executes a REM (0x05) instruction
+    #
+    # Pops off the top two values on the stack
+    # and pushes their remainder
+    @[AlwaysInline]
+    private def op_rem
+
+      # pop off two values
+      left = i_pop
+      right = i_pop
+      return unless left.is_a?(Int32) && right.is_a?(Int32)
+
+      # load the value onto the stack
+      @memory[@regs[SP] + 1] = left % right
       @regs[SP] += 1
       @regs[IP] += 1
     end
