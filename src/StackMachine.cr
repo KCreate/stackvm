@@ -20,7 +20,9 @@ module StackMachine
 
   vm.init(memory_size: 64) # 64 Int32 values
   vm.run program
-  puts "Exited with #{vm.regs[EXT]}"
+  exit_code = vm.regs[EXT]
+  puts "Exited with #{exit_code}"
   vm.clean
+  exit exit_code
 
 end

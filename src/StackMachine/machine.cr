@@ -15,6 +15,7 @@ module StackMachine
     # the amount of memory, end > start, which is marked as read-only
     property read_only_segment_size : Int32
 
+    # Initialize an empty VM
     def initialize
       @regs = Slice(Int32).new(REGISTER_COUNT, 0) # amount of registers defined in register.cr
       @memory = Slice(Int32).empty
@@ -118,7 +119,10 @@ module StackMachine
       return @memory[@regs[SP]]
     end
 
-    # Runs the ADD instruction
+    # Executes a ADD (0x00) instruction
+    #
+    # Pops off the top two values on the stack
+    # and pushes their sum
     private def op_add
 
       # pop off two values
@@ -132,7 +136,9 @@ module StackMachine
       @regs[IP] += 1
     end
 
-    # Runs the PUSH instruction
+    # Executes a PUSH (0x17)
+    #
+    # Pushes a value onto the stack
     private def op_push
       arg_address = @regs[IP] + 1
 
@@ -158,7 +164,9 @@ module StackMachine
       @regs[IP] += 2
     end
 
-    # Runs the PTOP instruction
+    # Executes a PTOP (0x25) instruction
+    #
+    # Prints the top of the stack
     private def op_ptop
       value = i_peek
       return unless value.is_a?(Int32)
@@ -166,7 +174,12 @@ module StackMachine
       @regs[IP] += 1
     end
 
-    # Runs the HALT instruction
+    # Executes a HALT (0x26) instruction
+    #
+    # Halts the machine
+    #
+    # Sets the RUN register to 1
+    # Set the EXT register to a given exit code
     private def op_halt
       arg_address = @regs[IP] + 1
 
