@@ -62,6 +62,7 @@ module StackMachine
     end
 
     # Begins executing the program
+    @[AlwaysInline]
     private def main_loop
       while @regs[RUN] == 0
         execute
@@ -71,6 +72,7 @@ module StackMachine
     end
 
     # Executes the current instruction
+    @[AlwaysInline]
     private def execute
 
       # load the current instruction
@@ -100,6 +102,7 @@ module StackMachine
     end
 
     # pop method for internal use
+    @[AlwaysInline]
     private def i_pop
       value = i_peek
       @regs[SP] -= 1
@@ -107,6 +110,7 @@ module StackMachine
     end
 
     # peek method for internal use
+    @[AlwaysInline]
     private def i_peek
 
       # check for a stack underflow
@@ -123,6 +127,7 @@ module StackMachine
     #
     # Pops off the top two values on the stack
     # and pushes their sum
+    @[AlwaysInline]
     private def op_add
 
       # pop off two values
@@ -139,6 +144,7 @@ module StackMachine
     # Executes a PUSH (0x17)
     #
     # Pushes a value onto the stack
+    @[AlwaysInline]
     private def op_push
       arg_address = @regs[IP] + 1
 
@@ -167,6 +173,7 @@ module StackMachine
     # Executes a PTOP (0x25) instruction
     #
     # Prints the top of the stack
+    @[AlwaysInline]
     private def op_ptop
       value = i_peek
       return unless value.is_a?(Int32)
@@ -180,6 +187,7 @@ module StackMachine
     #
     # Sets the RUN register to 1
     # Set the EXT register to a given exit code
+    @[AlwaysInline]
     private def op_halt
       arg_address = @regs[IP] + 1
 
