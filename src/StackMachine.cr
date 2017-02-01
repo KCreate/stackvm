@@ -8,15 +8,21 @@ module StackMachine
   STDIN.sync = true
   STDERR.sync = true
 
-  vm = VM.new
+  # read in a program from the filesystem
+  if ARGV.size < 1
+    puts "Missing filename"
+    exit 1
+  end
 
-  program = Program{
-    PUSH, 25,
-    PUSH, 25,
-    ADD,
-    PTOP,
-    HALT, 0
-  }
+  filename = ARGV[0]
+  content = File.read filename
+  data = [] of Int32
+  content.bytes.each do |byte|
+    data << byte.to_i32
+  end
+
+  vm = VM.new
+  program = Program.new data
 
   vm.init(memory_size: 64) # 64 Int32 values
   vm.run program
