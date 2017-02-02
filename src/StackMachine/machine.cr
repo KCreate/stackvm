@@ -91,6 +91,10 @@ module StackMachine
         return op_rem
       when LOADR
         return op_loadr
+      when MOV
+        return op_mov
+      when PUSHR
+        return op_pushr
       when PUSH
         return op_push
       when PTOP
