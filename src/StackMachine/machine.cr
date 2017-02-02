@@ -284,6 +284,43 @@ module StackMachine
       @regs[target] = @regs[source]
     end
 
+    # Executes a PUSHR instruction
+    # Pushes a value from a register onto the stack
+    @[AlwaysInline]
+    private def op_pushr
+      source_address = @regs[IP]
+      @regs[IP] += 1
+
+      # make sure there are enough arguments
+      if source_address < 0 || source_address >= @data.size
+        @regs[RUN] = 1
+        @regs[EXT] = MISSING_ARGUMENTS
+        return
+      end
+
+      source = @data[source_address]
+
+      # check that it is a valid register
+      unless Reg.valid source
+        @regs[RUN] = 1
+        @regs[EXT] = UNKNOWN_REGISTER
+        return
+      end
+
+      value = @regs[source]
+
+      # check if there is space on the stack
+      target_address = @regs[SP] + 1
+      if target_address >= @memory.size
+        @regs[RUN] = 1
+        @regs[EXT] = STACK_OVERFLOW
+        return
+      end
+
+      @memory[target_address] = value
+      @regs[SP] += 1
+    end
+
     # Executes a PUSH instruction
     # Pushes a value onto the stack
     @[AlwaysInline]
