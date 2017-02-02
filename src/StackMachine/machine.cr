@@ -11,15 +11,13 @@ module StackMachine
   class VM
     property regs : Slice(Int32) # registers
     property memory : Slice(Int32) # stack
-
-    # the amount of memory, end > start, which is marked as read-only
-    property read_only_segment_size : Int32
+    property data : Slice(Int32) # code memory
 
     # Initialize an empty VM
     def initialize
       @regs = Slice(Int32).new(REGISTER_COUNT, 0) # amount of registers defined in register.cr
       @memory = Slice(Int32).empty
-      @read_only_segment_size = 0
+      @data = Slice(Int32).empty
     end
 
     # Initialize with given amount of memory
@@ -31,31 +29,23 @@ module StackMachine
     def clean
       @regs = Slice(Int32).new(REGISTER_COUNT, 0) # amount of registers defined in register.cr
       @memory = Slice(Int32).empty
-      @read_only_segment_size = 0
+      @data = Slice(Int32).empty
     end
 
     # Runs a Program
     def run(program : Program)
 
-      # check if the program will fit into the stack
-      if program.data.size >= @memory.size
-        @regs[EXT] = PROGRAM_WONT_FIT
-        return
-      end
+      # initialize code memory
+      @data = Slice(Int32).new(program.data.size, NOP)
 
-      # load the program onto the end of the stack
-      start_address = @memory.size - program.data.size
-      program.data.each_with_index do |code, index|
-        @memory[start_address + index] = code
+      # load the program into code memory
+      program.data.each_with_index  do |opcode, index|
+        @data[index] = opcode
       end
-      @regs[IP] = start_address
 
       # initialize stack and frame pointers
       @regs[SP] = -1
       @regs[FP] = -1
-
-      # set the read only segment size
-      @read_only_segment_size = program.data.size - 1
 
       # begin executing the program
       return main_loop
@@ -76,7 +66,8 @@ module StackMachine
     private def execute
 
       # load the current instruction
-      instruction = @memory[@regs[IP]]
+      instruction = @data[@regs[IP]]
+      @regs[IP] += 1
 
       # check if this is a known instruction
       unless OP.valid instruction
@@ -133,7 +124,7 @@ module StackMachine
       return @memory[@regs[SP]]
     end
 
-    # Executes a ADD (0x00) instruction
+    # Executes a ADD instruction
     #
     # Pops off the top two values on the stack
     # and pushes their sum
@@ -148,10 +139,9 @@ module StackMachine
       # load the value onto the stack
       @memory[@regs[SP] + 1] = left + right
       @regs[SP] += 1
-      @regs[IP] += 1
     end
 
-    # Executes a SUB (0x01) instruction
+    # Executes a SUB instruction
     #
     # Pops off the top two values on the stack
     # and pushes their difference (left - right)
@@ -166,10 +156,9 @@ module StackMachine
       # load the value onto the stack
       @memory[@regs[SP] + 1] = left - right
       @regs[SP] += 1
-      @regs[IP] += 1
     end
 
-    # Executes a MUL (0x02) instruction
+    # Executes a MUL instruction
     #
     # Pops off the top two values on the stack
     # and pushes their product
@@ -184,10 +173,9 @@ module StackMachine
       # load the value onto the stack
       @memory[@regs[SP] + 1] = left * right
       @regs[SP] += 1
-      @regs[IP] += 1
     end
 
-    # Executes a DIV (0x03) instruction
+    # Executes a DIV instruction
     #
     # Pops off the top two values on the stack
     # and pushes their quotient
@@ -202,10 +190,9 @@ module StackMachine
       # load the value onto the stack
       @memory[@regs[SP] + 1] = left / right
       @regs[SP] += 1
-      @regs[IP] += 1
     end
 
-    # Executes a POW (0x04) instruction
+    # Executes a POW instruction
     #
     # Pops off the top two values on the stack
     # and pushes their power
@@ -220,10 +207,9 @@ module StackMachine
       # load the value onto the stack
       @memory[@regs[SP] + 1] = left ** right
       @regs[SP] += 1
-      @regs[IP] += 1
     end
 
-    # Executes a REM (0x05) instruction
+    # Executes a REM instruction
     #
     # Pops off the top two values on the stack
     # and pushes their remainder
@@ -238,15 +224,13 @@ module StackMachine
       # load the value onto the stack
       @memory[@regs[SP] + 1] = left % right
       @regs[SP] += 1
-      @regs[IP] += 1
     end
 
-    # Executes a PUSH (0x17)
-    #
+    # Executes a PUSH instruction
     # Pushes a value onto the stack
     @[AlwaysInline]
     private def op_push
-      arg_address = @regs[IP] + 1
+      arg_address = @regs[IP]
 
       # check if there is an argument
       if arg_address < 0 || arg_address >= @memory.size
@@ -255,11 +239,12 @@ module StackMachine
         return
       end
 
-      argument = @memory[arg_address]
+      argument = @data[arg_address]
+      @regs[IP] += 1
 
       # check if there is space on the stack
       target_address = @regs[SP] + 1
-      if target_address >= @memory.size - 1 - @read_only_segment_size
+      if target_address >= @memory.size
         @regs[RUN] = 1
         @regs[EXT] = STACK_OVERFLOW
         return
@@ -267,10 +252,9 @@ module StackMachine
 
       @memory[target_address] = argument
       @regs[SP] += 1
-      @regs[IP] += 2
     end
 
-    # Executes a PTOP (0x25) instruction
+    # Executes a PTOP instruction
     #
     # Prints the top of the stack
     @[AlwaysInline]
@@ -278,10 +262,9 @@ module StackMachine
       value = i_peek
       return unless value.is_a?(Int32)
       puts value
-      @regs[IP] += 1
     end
 
-    # Executes a HALT (0x26) instruction
+    # Executes a HALT instruction
     #
     # Halts the machine
     #
@@ -289,7 +272,8 @@ module StackMachine
     # Set the EXT register to a given exit code
     @[AlwaysInline]
     private def op_halt
-      arg_address = @regs[IP] + 1
+      arg_address = @regs[IP]
+      @regs[IP] += 1
 
       # check if there is an argument
       if arg_address < 0 || arg_address >= @memory.size
@@ -299,8 +283,7 @@ module StackMachine
       end
 
       @regs[RUN] = 1
-      @regs[EXT] = @memory[arg_address]
-      @regs[IP] += 1
+      @regs[EXT] = @data[arg_address]
     end
   end
 
