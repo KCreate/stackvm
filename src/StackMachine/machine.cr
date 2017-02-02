@@ -89,6 +89,8 @@ module StackMachine
         return op_pow
       when REM
         return op_rem
+      when LOADR
+        return op_loadr
       when PUSH
         return op_push
       when PTOP
@@ -224,6 +226,34 @@ module StackMachine
       # load the value onto the stack
       @memory[@regs[SP] + 1] = left % right
       @regs[SP] += 1
+    end
+
+    # Executes a LOADR instruction
+    # Loads a given value into a given register
+    @[AlwaysInline]
+    private def op_loadr
+      register_address = @regs[IP]
+      value_address = @regs[IP] + 1
+      @regs[IP] += 2
+
+      # make sure there are enough arguments
+      if value_address < 0 || value_address >= @memory.size
+        @regs[RUN] = 1
+        @regs[EXT] = MISSING_ARGUMENTS
+        return
+      end
+
+      register = @data[register_address]
+      value = @data[value_address]
+
+      # check that if this is a valid register identifier
+      unless Reg.valid register
+        @regs[RUN] = 1
+        @regs[EXT] = UNKNOWN_REGISTER
+        return
+      end
+
+      @regs[register] = value
     end
 
     # Executes a PUSH instruction
