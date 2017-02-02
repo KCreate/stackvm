@@ -241,7 +241,7 @@ module StackMachine
       @regs[IP] += 2
 
       # make sure there are enough arguments
-      if value_address < 0 || value_address >= @memory.size
+      if value_address < 0 || value_address >= @data.size
         @regs[RUN] = 1
         @regs[EXT] = MISSING_ARGUMENTS
         return
@@ -332,7 +332,7 @@ module StackMachine
       arg_address = @regs[IP]
 
       # check if there is an argument
-      if arg_address < 0 || arg_address >= @memory.size
+      if arg_address < 0 || arg_address >= @data.size
         @regs[RUN] = 1
         @regs[EXT] = MISSING_ARGUMENTS
         return
@@ -375,7 +375,7 @@ module StackMachine
       @regs[IP] += 1
 
       # check if there is an argument
-      if arg_address < 0 || arg_address >= @memory.size
+      if arg_address < 0 || arg_address >= @data.size
         @regs[RUN] = 1
         @regs[EXT] = MISSING_ARGUMENTS
         return
