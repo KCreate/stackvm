@@ -97,14 +97,12 @@ module StackMachine
         return op_pushr
       when PUSH
         return op_push
+      when POP
+        return op_pop
       when PTOP
         return op_ptop
       when HALT
         return op_halt
-      else
-        @regs[RUN] = 1
-        @regs[EXT] = UNKNOWN_INSTRUCTION
-        return
       end
     end
 
@@ -130,21 +128,31 @@ module StackMachine
       return @memory[@regs[SP]]
     end
 
+    # internal method to push something onto the stack
+    @[AlwaysInline]
+    private def i_push(value : Int32)
+
+      # check that there is space on the stack
+      if @regs[SP] + 1 >= @memory.size
+        @regs[RUN] = 1
+        @regs[EXT] = STACK_OVERFLOW
+        return nil
+      end
+
+      @memory[@regs[SP] + 1] = value
+      @regs[SP] += 1
+    end
+
     # Executes a ADD instruction
     #
     # Pops off the top two values on the stack
     # and pushes their sum
     @[AlwaysInline]
     private def op_add
-
-      # pop off two values
       left = i_pop
       right = i_pop
       return unless left.is_a?(Int32) && right.is_a?(Int32)
-
-      # load the value onto the stack
-      @memory[@regs[SP] + 1] = left + right
-      @regs[SP] += 1
+      i_push left + right
     end
 
     # Executes a SUB instruction
@@ -153,15 +161,10 @@ module StackMachine
     # and pushes their difference (left - right)
     @[AlwaysInline]
     private def op_sub
-
-      # pop off two values
       left = i_pop
       right = i_pop
       return unless left.is_a?(Int32) && right.is_a?(Int32)
-
-      # load the value onto the stack
-      @memory[@regs[SP] + 1] = left - right
-      @regs[SP] += 1
+      i_push left - right
     end
 
     # Executes a MUL instruction
@@ -170,15 +173,10 @@ module StackMachine
     # and pushes their product
     @[AlwaysInline]
     private def op_mul
-
-      # pop off two values
       left = i_pop
       right = i_pop
       return unless left.is_a?(Int32) && right.is_a?(Int32)
-
-      # load the value onto the stack
-      @memory[@regs[SP] + 1] = left * right
-      @regs[SP] += 1
+      i_push left * right
     end
 
     # Executes a DIV instruction
@@ -187,15 +185,10 @@ module StackMachine
     # and pushes their quotient
     @[AlwaysInline]
     private def op_div
-
-      # pop off two values
       left = i_pop
       right = i_pop
       return unless left.is_a?(Int32) && right.is_a?(Int32)
-
-      # load the value onto the stack
-      @memory[@regs[SP] + 1] = left / right
-      @regs[SP] += 1
+      i_push left / right
     end
 
     # Executes a POW instruction
@@ -204,15 +197,10 @@ module StackMachine
     # and pushes their power
     @[AlwaysInline]
     private def op_pow
-
-      # pop off two values
       left = i_pop
       right = i_pop
       return unless left.is_a?(Int32) && right.is_a?(Int32)
-
-      # load the value onto the stack
-      @memory[@regs[SP] + 1] = left ** right
-      @regs[SP] += 1
+      i_push left ** right
     end
 
     # Executes a REM instruction
@@ -221,15 +209,10 @@ module StackMachine
     # and pushes their remainder
     @[AlwaysInline]
     private def op_rem
-
-      # pop off two values
       left = i_pop
       right = i_pop
       return unless left.is_a?(Int32) && right.is_a?(Int32)
-
-      # load the value onto the stack
-      @memory[@regs[SP] + 1] = left % right
-      @regs[SP] += 1
+      i_push left % right
     end
 
     # Executes a LOADR instruction
@@ -311,18 +294,7 @@ module StackMachine
         return
       end
 
-      value = @regs[source]
-
-      # check if there is space on the stack
-      target_address = @regs[SP] + 1
-      if target_address >= @memory.size
-        @regs[RUN] = 1
-        @regs[EXT] = STACK_OVERFLOW
-        return
-      end
-
-      @memory[target_address] = value
-      @regs[SP] += 1
+      i_push @regs[source]
     end
 
     # Executes a PUSH instruction
@@ -330,6 +302,7 @@ module StackMachine
     @[AlwaysInline]
     private def op_push
       arg_address = @regs[IP]
+      @regs[IP] += 1
 
       # check if there is an argument
       if arg_address < 0 || arg_address >= @data.size
@@ -338,19 +311,37 @@ module StackMachine
         return
       end
 
-      argument = @data[arg_address]
-      @regs[IP] += 1
+      i_push @data[arg_address]
+    end
 
-      # check if there is space on the stack
-      target_address = @regs[SP] + 1
-      if target_address >= @memory.size
+    # Executes a POP instruction
+    # Pops a value from the stack into a given register
+    @[AlwaysInline]
+    private def op_pop
+      target_address = @regs[IP]
+
+      # check if there is an argument
+      if target_address < 0 || target_address >= @data.size
         @regs[RUN] = 1
-        @regs[EXT] = STACK_OVERFLOW
+        @regs[EXT] = MISSING_ARGUMENTS
         return
       end
 
-      @memory[target_address] = argument
-      @regs[SP] += 1
+      # load the value from code memory
+      target = @data[target_address]
+      @regs[IP] += 1
+
+      # check if it's a valid register
+      unless Reg.valid target
+        @regs[RUN] = 1
+        @regs[EXT] = UNKNOWN_REGISTER
+        return
+      end
+
+      value = i_pop
+      return unless value.is_a? Int32
+
+      @regs[target] = value
     end
 
     # Executes a PTOP instruction
