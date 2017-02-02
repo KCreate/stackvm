@@ -256,6 +256,34 @@ module StackMachine
       @regs[register] = value
     end
 
+    # Executes a MOV instruction
+    # Copies a value from a register into another
+    @[AlwaysInline]
+    private def op_mov
+      target_address = @regs[IP]
+      source_address = @regs[IP] + 1
+      @regs[IP] += 2
+
+      # make sure there are enough arguments
+      if source_address < 0 || source_address >= @data.size
+        @regs[RUN] = 1
+        @regs[EXT] = MISSING_ARGUMENTS
+        return
+      end
+
+      target = @data[target_address]
+      source = @data[source_address]
+
+      # check that they are valid registers
+      unless Reg.valid(target) && Reg.valid(source)
+        @regs[RUN] = 1
+        @regs[EXT] = UNKNOWN_REGISTER
+        return
+      end
+
+      @regs[target] = @regs[source]
+    end
+
     # Executes a PUSH instruction
     # Pushes a value onto the stack
     @[AlwaysInline]
