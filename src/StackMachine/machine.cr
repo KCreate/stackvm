@@ -131,10 +131,14 @@ module StackMachine
         return op_lt
       when GT
         return op_gt
+      when PREG
+        return op_preg
       when PTOP
         return op_ptop
       when HALT
         return op_halt
+      when NOP
+        return nil
       end
     end
 
@@ -635,6 +639,30 @@ module StackMachine
       lower = i_pop
       return unless upper.is_a?(Int32) && lower.is_a?(Int32)
       i_push lower > upper ? 0 : 1
+    end
+
+    # Executes a PREG instruction
+    #
+    # Prints the contents of a given register
+    private def op_preg
+      register_address = @regs[IP]
+      @regs[IP] += 1
+
+      if register_address < 0 || register_address >= @data.size
+        @regs[RUN] = 1
+        @regs[EXT] = MISSING_ARGUMENTS
+        return
+      end
+
+      register = @data[register_address]
+
+      unless Reg.valid register
+        @regs[RUN] = 1
+        @regs[EXT] = UNKNOWN_REGISTER
+        return
+      end
+
+      puts @regs[register]
     end
 
     # Executes a PTOP instruction

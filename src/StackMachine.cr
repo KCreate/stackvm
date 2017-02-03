@@ -8,15 +8,12 @@ module StackMachine
 
   program = Program{
     PUSH, 25,
-    PUSH, 25,
-    LT,
-    PTOP,
-
-    PUSH, 25,
-    PUSH, 25,
-    GT,
-    PTOP,
-
+    POP, R0,
+    PREG, R0,
+    NOP,
+    NOP,
+    NOP,
+    NOP,
     HALT, 0
   }
 
