@@ -115,6 +115,8 @@ module StackMachine
         return op_load
       when STORE
         return op_store
+      when STORER
+        return op_storer
       when MOV
         return op_mov
       when PUSHR
@@ -385,7 +387,7 @@ module StackMachine
       @regs[IP] += 2
 
       # make sure there are enough arguments
-      if value_address < 0 || value_address >= @data.size
+      if register_address < 0 || value_address >= @data.size
         @regs[RUN] = 1
         @regs[EXT] = MISSING_ARGUMENTS
         return
@@ -441,7 +443,7 @@ module StackMachine
       @regs[IP] += 2
 
       # check for out of bounds
-      if diff_address < 0 || diff_address >= @data.size
+      if value_address < 0 || diff_address >= @data.size
         @regs[RUN] = 1
         @regs[EXT] = MISSING_ARGUMENTS
         return
@@ -460,6 +462,41 @@ module StackMachine
       @memory[diff] = value
     end
 
+    # Executes a STORER instruction
+    #
+    # Stores value in register at location fp + diff
+    private def op_storer
+      register_address = @regs[IP]
+      diff_address = @regs[IP] + 1
+      @regs[IP] += 2
+
+      # check out of bounds
+      if register_address < 0 || diff_address >= @data.size
+        @regs[RUN] = 1
+        @regs[EXT] = MISSING_ARGUMENTS
+        return
+      end
+
+      register = @data[register_address]
+      diff = @regs[FP] + @data[diff_address]
+
+      # make sure the stack index is inside the memory
+      if diff < 0 || diff >= @memory.size
+        @regs[RUN] = 1
+        @regs[EXT] = ILLEGAL_MEMORY_ACCESS
+        return
+      end
+
+      # check if register is valid
+      unless Reg.valid register
+        @regs[RUN] = 1
+        @regs[EXT] = UNKNOWN_REGISTER
+        return
+      end
+
+      @memory[diff] = @regs[register]
+    end
+
     # Executes a MOV instruction
     # Copies a value from a register into another
     @[AlwaysInline]
@@ -469,7 +506,7 @@ module StackMachine
       @regs[IP] += 2
 
       # make sure there are enough arguments
-      if source_address < 0 || source_address >= @data.size
+      if target_address < 0 || source_address >= @data.size
         @regs[RUN] = 1
         @regs[EXT] = MISSING_ARGUMENTS
         return
