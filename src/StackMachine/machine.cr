@@ -139,6 +139,8 @@ module StackMachine
         return op_jmp
       when CALL
         return op_call
+      when RET
+        return op_ret
       when PREG
         return op_preg
       when PTOP
@@ -754,6 +756,32 @@ module StackMachine
       i_push @regs[FP]
       @regs[FP] = @regs[SP]
       @regs[IP] = target
+    end
+
+    # Executes a RET instruction
+    #
+    # Pops the stack and moves the value to AX
+    # Then returns to the return address
+    @[AlwaysInline]
+    private def op_ret
+      old_frame_pointer = i_pop
+      return_address = i_pop
+      argument_count = i_pop
+
+      return unless old_frame_pointer.is_a?(Int32)
+      return unless return_address.is_a?(Int32)
+      return unless argument_count.is_a?(Int32)
+
+      # restore the frame pointer
+      @regs[FP] = old_frame_pointer
+
+      # jump back to the return address
+      @regs[IP] = return_address
+
+      # pop the arguments off the stack
+      argument_count.times do
+        i_pop
+      end
     end
 
     # Executes a PREG instruction
