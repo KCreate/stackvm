@@ -137,6 +137,8 @@ module StackMachine
         return op_jnz
       when JMP
         return op_jmp
+      when CALL
+        return op_call
       when PREG
         return op_preg
       when PTOP
@@ -721,6 +723,37 @@ module StackMachine
       jump = @data[jump_address]
 
       @regs[IP] = jump
+    end
+
+    # Executes a CALL instruction
+    #
+    # Creates a new stack frame and jumps to address
+    @[AlwaysInline]
+    private def op_call
+      target_address = @regs[IP]
+      @regs[IP] += 1
+
+      # check if there is an argument
+      if target_address < 0 || target_address >= @data.size
+        @regs[RUN] = 1
+        @regs[EXT] = MISSING_ARGUMENTS
+        return
+      end
+
+      target = @data[target_address]
+
+      # check if the target address is inside data memory
+      if target < 0 || target >= @data.size
+        @regs[RUN] = 1
+        @regs[EXT] = ILLEGAL_MEMORY_ACCESS
+        return
+      end
+
+      # push the stack frame
+      i_push @regs[IP]
+      i_push @regs[FP]
+      @regs[FP] = @regs[SP]
+      @regs[IP] = target
     end
 
     # Executes a PREG instruction
