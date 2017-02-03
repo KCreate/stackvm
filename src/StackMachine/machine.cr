@@ -101,6 +101,10 @@ module StackMachine
         return op_or
       when AND
         return op_and
+      when INCR
+        return op_incr
+      when DECR
+        return op_decr
       when LOADR
         return op_loadr
       when MOV
@@ -292,6 +296,58 @@ module StackMachine
       i_push left & right
     end
 
+    # Executes a INCR instruction
+    #
+    # Increments a value in a given register
+    private def op_incr
+      reg_address = @regs[IP]
+      @regs[IP] += 1
+
+      # make sure there are enough arguments
+      if reg_address < 0 || reg_address >= @data.size
+        @regs[RUN] = 1
+        @regs[EXT] = MISSING_ARGUMENTS
+        return
+      end
+
+      register = @data[reg_address]
+
+      # check if this is a valid register
+      unless Reg.valid register
+        @regs[RUN] = 1
+        @regs[EXT] = UNKNOWN_REGISTER
+        return
+      end
+
+      @regs[register] += 1
+    end
+
+    # Executes a DECR instruction
+    #
+    # Decrements a value in a given register
+    private def op_decr
+      reg_address = @regs[IP]
+      @regs[IP] += 1
+
+      # make sure there are enough arguments
+      if reg_address < 0 || reg_address >= @data.size
+        @regs[RUN] = 1
+        @regs[EXT] = MISSING_ARGUMENTS
+        return
+      end
+
+      register = @data[reg_address]
+
+      # check if this is a valid register
+      unless Reg.valid register
+        @regs[RUN] = 1
+        @regs[EXT] = UNKNOWN_REGISTER
+        return
+      end
+
+      @regs[register] -= 1
+    end
+
     # Executes a LOADR instruction
     # Loads a given value into a given register
     @[AlwaysInline]
@@ -310,7 +366,7 @@ module StackMachine
       register = @data[register_address]
       value = @data[value_address]
 
-      # check that if this is a valid register identifier
+      # check if this is a valid register
       unless Reg.valid register
         @regs[RUN] = 1
         @regs[EXT] = UNKNOWN_REGISTER
