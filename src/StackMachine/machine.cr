@@ -89,6 +89,18 @@ module StackMachine
         return op_pow
       when REM
         return op_rem
+      when SHR
+        return op_shr
+      when SHL
+        return op_shl
+      when NOT
+        return op_not
+      when XOR
+        return op_xor
+      when OR
+        return op_or
+      when AND
+        return op_and
       when LOADR
         return op_loadr
       when MOV
@@ -149,8 +161,8 @@ module StackMachine
     # and pushes their sum
     @[AlwaysInline]
     private def op_add
-      left = i_pop
       right = i_pop
+      left = i_pop
       return unless left.is_a?(Int32) && right.is_a?(Int32)
       i_push left + right
     end
@@ -161,8 +173,8 @@ module StackMachine
     # and pushes their difference (left - right)
     @[AlwaysInline]
     private def op_sub
-      left = i_pop
       right = i_pop
+      left = i_pop
       return unless left.is_a?(Int32) && right.is_a?(Int32)
       i_push left - right
     end
@@ -173,8 +185,8 @@ module StackMachine
     # and pushes their product
     @[AlwaysInline]
     private def op_mul
-      left = i_pop
       right = i_pop
+      left = i_pop
       return unless left.is_a?(Int32) && right.is_a?(Int32)
       i_push left * right
     end
@@ -185,8 +197,8 @@ module StackMachine
     # and pushes their quotient
     @[AlwaysInline]
     private def op_div
-      left = i_pop
       right = i_pop
+      left = i_pop
       return unless left.is_a?(Int32) && right.is_a?(Int32)
       i_push left / right
     end
@@ -197,8 +209,8 @@ module StackMachine
     # and pushes their power
     @[AlwaysInline]
     private def op_pow
-      left = i_pop
       right = i_pop
+      left = i_pop
       return unless left.is_a?(Int32) && right.is_a?(Int32)
       i_push left ** right
     end
@@ -209,10 +221,75 @@ module StackMachine
     # and pushes their remainder
     @[AlwaysInline]
     private def op_rem
-      left = i_pop
       right = i_pop
+      left = i_pop
       return unless left.is_a?(Int32) && right.is_a?(Int32)
       i_push left % right
+    end
+
+    # Executes a SHR instruction
+    #
+    # Pops of a value from the stack and right-shifts by the second-highest value
+    @[AlwaysInline]
+    private def op_shr
+      amount = i_pop
+      value = i_pop
+      return unless amount.is_a?(Int32) && value.is_a?(Int32)
+      i_push value >> amount
+    end
+
+    # Executes a SHL instruction
+    #
+    # Pops of a value from the stack and left-shifts by the second-highest value
+    @[AlwaysInline]
+    private def op_shl
+      amount = i_pop
+      value = i_pop
+      return unless amount.is_a?(Int32) && value.is_a?(Int32)
+      i_push value << amount
+    end
+
+    # Executes a NOT instruction
+    #
+    # Pops of a value from the stack and pushes the bitwise NOT onto the stack
+    @[AlwaysInline]
+    private def op_not
+      value = i_pop
+      return unless value.is_a?(Int32)
+      i_push ~value
+    end
+
+    # Executes a XOR instruction
+    #
+    # Pops of two values from the stack and pushes the bitwise XOR onto the stack
+    @[AlwaysInline]
+    private def op_xor
+      right = i_pop
+      left = i_pop
+      return unless left.is_a?(Int32) && right.is_a?(Int32)
+      i_push left ^ right
+    end
+
+    # Executes a OR instruction
+    #
+    # Pops of two values from the stack and pushes the bitwise OR onto the stack
+    @[AlwaysInline]
+    private def op_or
+      right = i_pop
+      left = i_pop
+      return unless left.is_a?(Int32) && right.is_a?(Int32)
+      i_push left | right
+    end
+
+    # Executes a AND instruction
+    #
+    # Pops of two values from the stack and pushes the bitwise AND onto the stack
+    @[AlwaysInline]
+    private def op_and
+      right = i_pop
+      left = i_pop
+      return unless left.is_a?(Int32) && right.is_a?(Int32)
+      i_push left & right
     end
 
     # Executes a LOADR instruction
