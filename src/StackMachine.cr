@@ -7,17 +7,9 @@ module StackMachine
   vm = VM.new
 
   program = Program{
-    # prepare data that will be overwritten
-    PUSH, 0,
-
-    # pop the value into R0
     PUSH, 25,
-    POP, R0,
-
-    # write to memory index 0
-    STORER, R0, 1,
-
-    # print
+    PUSH, 25,
+    CMP,
     PTOP,
     HALT, 0
   }

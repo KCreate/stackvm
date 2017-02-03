@@ -125,6 +125,8 @@ module StackMachine
         return op_push
       when POP
         return op_pop
+      when CMP
+        return op_cmp
       when PTOP
         return op_ptop
       when HALT
@@ -596,6 +598,17 @@ module StackMachine
       return unless value.is_a? Int32
 
       @regs[target] = value
+    end
+
+    # Executes a CMP instruction
+    #
+    # Pops off two values from the stack and pushes 0 if they are equal
+    @[AlwaysInline]
+    private def op_cmp
+      first = i_pop
+      second = i_pop
+      return unless first.is_a?(Int32) && second.is_a?(Int32)
+      i_push first == second ? 0 : 1
     end
 
     # Executes a PTOP instruction
