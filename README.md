@@ -20,9 +20,9 @@ It is written in [Crystal](https://crystal-lang.org).
 | SHR    |           | Pops off two values and right shifts the lower value by the upper value (lower >> upper)                             |
 | SHL    |           | Pops off two values and left shifts the lower value by the upper value (lower << upper)                              |
 | NOT    |           | Performs bitwise NOT on the top value on the stack                                                                   |
-| XOR    |           | Performs bitwise XOR on the top value on the stack                                                                   |
-| OR     |           | Performs bitwise OR on the top value on the stack                                                                    |
-| AND    |           | Performs bitwise AND on the top value on the stack                                                                   |
+| XOR    |           | Pops off two values and pushes the bitwise XOR (lower ^ upper)                                                       |
+| OR     |           | Pops off two values and pushes the bitwise OR (lower | upper)                                                        |
+| AND    |           | Pops off two values and pushes the bitwise AND (lower & upper)                                                       |
 | INCR   | reg       | Increments the value in a given register                                                                             |
 | DECR   | reg       | Decrements the value in a given register                                                                             |
 | INC    |           | Increments the value on top of the stack                                                                             |
