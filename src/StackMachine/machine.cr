@@ -105,6 +105,10 @@ module StackMachine
         return op_incr
       when DECR
         return op_decr
+      when INC
+        return op_inc
+      when DEC
+        return op_dec
       when LOADR
         return op_loadr
       when MOV
@@ -346,6 +350,26 @@ module StackMachine
       end
 
       @regs[register] -= 1
+    end
+
+    # Executes a INC instruction
+    #
+    # Increments the top of the stack
+    @[AlwaysInline]
+    private def op_inc
+      value = i_pop
+      return unless value.is_a? Int32
+      i_push value + 1
+    end
+
+    # Executes a DEC instruction
+    #
+    # Decrements the top of the stack
+    @[AlwaysInline]
+    private def op_dec
+      value = i_pop
+      return unless value.is_a? Int32
+      i_push value - 1
     end
 
     # Executes a LOADR instruction

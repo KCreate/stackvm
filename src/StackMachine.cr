@@ -7,9 +7,10 @@ module StackMachine
   vm = VM.new
 
   program = Program{
-    LOADR, R0, 5,
-    DECR, R0,
-    PUSHR, R0,
+    PUSH, 25,
+    INC,
+    INC,
+    INC,
     PTOP,
     HALT, 0
   }
