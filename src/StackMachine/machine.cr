@@ -522,8 +522,8 @@ module StackMachine
     # Copies a value from a register into another
     @[AlwaysInline]
     private def op_mov
-      target_address = @regs[IP]
-      source_address = @regs[IP] + 1
+      source_address = @regs[IP]
+      target_address = @regs[IP] + 1
       @regs[IP] += 2
 
       # make sure there are enough arguments
