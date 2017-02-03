@@ -16,12 +16,11 @@ module StackMachine
     IP = 0x0B # instruction pointer
     SP = 0x0C # stack pointer
     FP = 0x0D # frame pointer
-    RO = 0x0E # read-only memory from the end to the start
 
-    RUN = 0x0F # machine state
-    EXT = 0x10 # exit code
+    RUN = 0x0E # machine state
+    EXT = 0x0F # exit code
 
-    REGISTER_COUNT = 17 # amount of registers declared
+    REGISTER_COUNT = 16 # amount of registers declared
 
     def self.valid(register : Int32)
       register >= 0 && register < REGISTER_COUNT
