@@ -131,6 +131,10 @@ module StackMachine
         return op_lt
       when GT
         return op_gt
+      when JZ
+        return op_jz
+      when JNZ
+        return op_jnz
       when JMP
         return op_jmp
       when PREG
@@ -641,6 +645,62 @@ module StackMachine
       lower = i_pop
       return unless upper.is_a?(Int32) && lower.is_a?(Int32)
       i_push lower > upper ? 0 : 1
+    end
+
+    # Executes a JZ instruction
+    #
+    # Jumps to absolute address if top of the stack is 0
+    @[AlwaysInline]
+    private def op_jz
+
+      # bail out if top of the stack is not 0
+      should_jump = i_pop
+      return unless should_jump.is_a? Int32
+      unless should_jump == 0
+        @regs[IP] += 1 # jump over the target address argument
+        return
+      end
+
+      jump_address = @regs[IP]
+      @regs[IP] += 1
+
+      if jump_address < 0 || jump_address >= @data.size
+        @regs[RUN] = 1
+        @regs[EXT] = MISSING_ARGUMENTS
+        return
+      end
+
+      jump = @data[jump_address]
+
+      @regs[IP] = jump
+    end
+
+    # Executes a JNZ instruction
+    #
+    # Jumps to absolute address if top of the stack is not 0
+    @[AlwaysInline]
+    private def op_jnz
+
+      # bail out if top of the stack is 0
+      should_jump = i_pop
+      return unless should_jump.is_a? Int32
+      if should_jump == 0
+        @regs[IP] += 1 # jump over the target address argument
+        return
+      end
+
+      jump_address = @regs[IP]
+      @regs[IP] += 1
+
+      if jump_address < 0 || jump_address >= @data.size
+        @regs[RUN] = 1
+        @regs[EXT] = MISSING_ARGUMENTS
+        return
+      end
+
+      jump = @data[jump_address]
+
+      @regs[IP] = jump
     end
 
     # Executes a JMP instruction

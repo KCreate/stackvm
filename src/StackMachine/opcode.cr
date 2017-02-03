@@ -35,13 +35,10 @@ module StackMachine
     GT = 0x1C # pops top two values and pushes 0 if lower > upper
 
     JZ = 0x1D # jumps to absolute address if top of the stack is 0
-    RJZ = 0x1E # adds differential to ip if top of the stack is 0
     JNZ = 0x1F # jumps to absolute address if top of the stack is not 0
-    RJNZ = 0x20 # adds differential to ip if top of the stack is not 0
     JMP = 0x21 # jumps to absolute address unconditionally
-    RJMP = 0x22 # adds differential to ip unconditionally
-    CALL = 0x23 # pushes current ip and unconditionally jumps to given address
-    RET = 0x24 # put top of the stack into ax and jump to address at the (now) top of stack
+    CALL = 0x23 # creates a new stack frame and jumps
+    RET = 0x24 # put top of the stack into ax and jumps to return address
 
     PREG = 0x25 # prints the contents of given register
     PTOP = 0x26 # prints top of stack (doesn't pop)

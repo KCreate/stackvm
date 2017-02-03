@@ -7,15 +7,11 @@ module StackMachine
   vm = VM.new
 
   program = Program{
+    PUSH, 1,
+    JZ, 7,
     PUSH, 25,
     PTOP,
-    JMP, 7,
-
-    HALT, 0,
-
-    PUSH, 50,
-    PTOP,
-    JMP, 5
+    HALT, 0
   }
 
   vm.init(memory_size: 64) # 64 Int32 values
