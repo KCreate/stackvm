@@ -111,6 +111,8 @@ module StackMachine
         return op_dec
       when LOADR
         return op_loadr
+      when LOAD
+        return op_load
       when MOV
         return op_mov
       when PUSHR
@@ -398,6 +400,33 @@ module StackMachine
       end
 
       @regs[register] = value
+    end
+
+    # Executes a LOAD instruction
+    #
+    # Loads the value at fp + diff onto the stack
+    @[AlwaysInline]
+    private def op_load
+      diff_address = @regs[IP]
+      @regs[IP] += 1
+
+      # make sure there are enough arguments
+      if diff_address < 0 || diff_address >= @data.size
+        @regs[RUN] = 1
+        @regs[EXT] = MISSING_ARGUMENTS
+        return
+      end
+
+      address = @regs[FP] + @data[diff_address]
+
+      # check for out-of-bounds
+      if address < 0 || address >= @memory.size
+        @regs[RUN] = 1
+        @regs[EXT] = ILLEGAL_MEMORY_ACCESS
+        return
+      end
+
+      i_push @memory[address]
     end
 
     # Executes a MOV instruction
