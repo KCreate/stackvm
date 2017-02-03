@@ -131,6 +131,8 @@ module StackMachine
         return op_lt
       when GT
         return op_gt
+      when JMP
+        return op_jmp
       when PREG
         return op_preg
       when PTOP
@@ -639,6 +641,25 @@ module StackMachine
       lower = i_pop
       return unless upper.is_a?(Int32) && lower.is_a?(Int32)
       i_push lower > upper ? 0 : 1
+    end
+
+    # Executes a JMP instruction
+    #
+    # Jumps to absolute address unconditionally
+    @[AlwaysInline]
+    private def op_jmp
+      jump_address = @regs[IP]
+      @regs[IP] += 1
+
+      if jump_address < 0 || jump_address >= @data.size
+        @regs[RUN] = 1
+        @regs[EXT] = MISSING_ARGUMENTS
+        return
+      end
+
+      jump = @data[jump_address]
+
+      @regs[IP] = jump
     end
 
     # Executes a PREG instruction

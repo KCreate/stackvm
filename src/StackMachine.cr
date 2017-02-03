@@ -8,13 +8,14 @@ module StackMachine
 
   program = Program{
     PUSH, 25,
-    POP, R0,
-    PREG, R0,
-    NOP,
-    NOP,
-    NOP,
-    NOP,
-    HALT, 0
+    PTOP,
+    JMP, 7,
+
+    HALT, 0,
+
+    PUSH, 50,
+    PTOP,
+    JMP, 5
   }
 
   vm.init(memory_size: 64) # 64 Int32 values
