@@ -113,6 +113,8 @@ module StackMachine
         return op_loadr
       when LOAD
         return op_load
+      when STORE
+        return op_store
       when MOV
         return op_mov
       when PUSHR
@@ -429,6 +431,35 @@ module StackMachine
       i_push @memory[address]
     end
 
+    # Executes a STORE instruction
+    #
+    # Stores a value at location fp + diff
+    @[AlwaysInline]
+    private def op_store
+      value_address = @regs[IP]
+      diff_address = @regs[IP] + 1
+      @regs[IP] += 2
+
+      # check for out of bounds
+      if diff_address < 0 || diff_address >= @data.size
+        @regs[RUN] = 1
+        @regs[EXT] = MISSING_ARGUMENTS
+        return
+      end
+
+      value = @data[value_address]
+      diff = @regs[FP] + @data[diff_address]
+
+      # make sure the stack index is inside the memory area
+      if diff < 0 || diff >= @memory.size
+        @regs[RUN] = 1
+        @regs[EXT] = ILLEGAL_MEMORY_ACCESS
+        return
+      end
+
+      @memory[diff] = value
+    end
+
     # Executes a MOV instruction
     # Copies a value from a register into another
     @[AlwaysInline]
@@ -505,6 +536,7 @@ module StackMachine
     @[AlwaysInline]
     private def op_pop
       target_address = @regs[IP]
+      @regs[IP] += 1
 
       # check if there is an argument
       if target_address < 0 || target_address >= @data.size
@@ -515,7 +547,6 @@ module StackMachine
 
       # load the value from code memory
       target = @data[target_address]
-      @regs[IP] += 1
 
       # check if it's a valid register
       unless Reg.valid target

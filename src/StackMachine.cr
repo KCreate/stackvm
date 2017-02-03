@@ -7,11 +7,10 @@ module StackMachine
   vm = VM.new
 
   program = Program{
-    PUSH, 25,
-    LOAD, 1,
+    PUSH, 10, # <- we will overwrite this value
+    STORE, 25, 1,
     PTOP,
-    HALT, 0,
-    250
+    HALT, 0
   }
 
   vm.init(memory_size: 64) # 64 Int32 values
