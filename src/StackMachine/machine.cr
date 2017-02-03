@@ -127,6 +127,10 @@ module StackMachine
         return op_pop
       when CMP
         return op_cmp
+      when LT
+        return op_lt
+      when GT
+        return op_gt
       when PTOP
         return op_ptop
       when HALT
@@ -609,6 +613,28 @@ module StackMachine
       second = i_pop
       return unless first.is_a?(Int32) && second.is_a?(Int32)
       i_push first == second ? 0 : 1
+    end
+
+    # Executes a LT instruction
+    #
+    # Pops off two values from the stack and pushes 0 if lower < top
+    @[AlwaysInline]
+    private def op_lt
+      upper = i_pop
+      lower = i_pop
+      return unless upper.is_a?(Int32) && lower.is_a?(Int32)
+      i_push lower < upper ? 0 : 1
+    end
+
+    # Executes a GT instruction
+    #
+    # Pops off two values from the stack and pushes 0 if lower > top
+    @[AlwaysInline]
+    private def op_gt
+      upper = i_pop
+      lower = i_pop
+      return unless upper.is_a?(Int32) && lower.is_a?(Int32)
+      i_push lower > upper ? 0 : 1
     end
 
     # Executes a PTOP instruction

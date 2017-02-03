@@ -9,8 +9,14 @@ module StackMachine
   program = Program{
     PUSH, 25,
     PUSH, 25,
-    CMP,
+    LT,
     PTOP,
+
+    PUSH, 25,
+    PUSH, 25,
+    GT,
+    PTOP,
+
     HALT, 0
   }
 
