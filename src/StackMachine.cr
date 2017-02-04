@@ -11,30 +11,40 @@ module StackMachine
     # this is the bytecode representation of the following
     # pseudo-code
     #
-    # print(1 + 2 + add(3, 4))
+    # print(add(5, 5) * sub(20, 10))
     # func add(a, b) { return a + b }
+    # func sub(a, b) { return a - b }
 
-    # calculate the left part
-    PUSH, 1,
-    PUSH, 2,
-    ADD,
-
-    # push arguments
-    PUSH, 3,
-    PUSH, 4,
-    PUSH, 2,
-
-    # call the method
-    CALL, 19,
+    # add(5, 5)
+    PUSH, 5,
+    PUSH, 5,
+    PUSH, 2, # <- argument count
+    CALL, 24,
     PUSHR, AX,
-    ADD,
+
+    # sub(20, 10)
+    PUSH, 20,
+    PUSH, 10,
+    PUSH, 2, # <- argument count
+    CALL, 32,
+    PUSHR, AX,
+
+    # add(5, 5) * sub(20, 10)
+    MUL,
     PTOP,
     HALT, 0,
 
-    # add function code
+    # function code for add
     LOAD, -4,
     LOAD, -3,
     ADD,
+    POP, AX,
+    RET,
+
+    # function code for sub
+    LOAD, -4,
+    LOAD, -3,
+    SUB,
     POP, AX,
     RET
   }
