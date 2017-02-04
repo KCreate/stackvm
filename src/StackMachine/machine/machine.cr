@@ -825,18 +825,10 @@ module StackMachine
     # Set the EXT register to a given exit code
     @[AlwaysInline]
     private def op_halt
-      arg_address = @regs[IP]
-      @regs[IP] += 1
-
-      # check if there is an argument
-      if arg_address < 0 || arg_address >= @data.size
-        @regs[RUN] = 1
-        @regs[EXT] = MISSING_ARGUMENTS
-        return
-      end
-
+      code = i_pop
+      return unless code.is_a? Int32
       @regs[RUN] = 1
-      @regs[EXT] = @data[arg_address]
+      @regs[EXT] = code
     end
   end
 
