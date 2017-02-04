@@ -1,0 +1,10 @@
+module StackMachine
+  module Error
+    STACK_OVERFLOW = 0
+    STACK_UNDERFLOW = 1
+    UNKNOWN_INSTRUCTION = 2
+    MISSING_ARGUMENTS = 3
+    UNKNOWN_REGISTER = 4
+    ILLEGAL_MEMORY_ACCESS = 5
+  end
+end

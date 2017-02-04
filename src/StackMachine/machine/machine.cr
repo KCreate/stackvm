@@ -1,5 +1,4 @@
-require "./register.cr"
-require "./opcode.cr"
+require "../constants/*"
 require "./program.cr"
 
 module StackMachine

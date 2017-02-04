@@ -1,5 +1,4 @@
 module StackMachine
-  # Opcodes
   module OP
     ADD = 0x00
     SUB = 0x01
