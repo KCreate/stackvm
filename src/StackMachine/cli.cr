@@ -60,7 +60,15 @@ module StackMachine
     def self.assemble(filename : String)
       source = File.read filename
       bytecode = Assembler::Assembler.new.build source
-      STDOUT.print bytecode
+      bytecode.each do |code|
+        p1 = Pointer(Int32).malloc 1
+        p1.value = code
+        bytes = Pointer(UInt8).new p1.address
+        bytes = Slice.new bytes, 4
+        bytes.reverse!
+
+        STDOUT.write bytes
+      end
     end
 
   end
