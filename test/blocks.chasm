@@ -1,0 +1,47 @@
+; program entry point
+entry:
+  call @main
+  pushr %ax
+  halt
+
+; main function
+main:
+
+  ; add(5, 5)
+  push 0x05
+  push 0x05
+  push 2
+  call @add
+  pushr %ax
+
+  ; sub(20, 10)
+  push 20
+  push 10
+  push 2
+  call @sub
+  pushr %ax
+
+  ; multiply and print
+  mul
+  ptop
+
+  ; exit(0)
+  push 0
+  pop %ax
+  ret
+
+; add function
+add:
+  load -4
+  load -3
+  add
+  pop %ax
+  ret
+
+; sub function
+sub:
+  load -4
+  load -3
+  sub
+  pop %ax
+  ret
