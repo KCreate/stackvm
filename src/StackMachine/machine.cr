@@ -156,7 +156,6 @@ module StackMachine
     @[AlwaysInline]
     private def i_pop
       value = i_peek
-      @memory[@regs[SP]] = 0
       @regs[SP] -= 1
       return value
     end
