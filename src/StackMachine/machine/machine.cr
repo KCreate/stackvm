@@ -798,13 +798,12 @@ module StackMachine
     # Then returns to the return address
     @[AlwaysInline]
     private def op_ret
-      old_frame_pointer = i_pop
-      return_address = i_pop
-      argument_count = i_pop
+      old_frame_pointer = @memory[@regs[FP]]
+      return_address = @memory[@regs[FP] - 1]
+      argument_count = @memory[@regs[FP] - 2]
 
-      return unless old_frame_pointer.is_a?(Int32)
-      return unless return_address.is_a?(Int32)
-      return unless argument_count.is_a?(Int32)
+      # restore the stack pointer
+      @regs[SP] = @regs[FP] - 3
 
       # restore the frame pointer
       @regs[FP] = old_frame_pointer
