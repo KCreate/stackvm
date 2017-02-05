@@ -72,7 +72,7 @@ This is needed for the `RET` instruction which removes the arguments afterwards.
 When you call the `CALL` instruction, the virtual machine pushes the current instruction-pointer
 and the current frame-pointer onto the stack. The frame-pointer is then set to the current stack pointer.
 
-![Stack frame](docs/stack-frame.svg)
+![Stack frame](https://rawgit.com/KCreate/stack-machine/master/docs/stack-frame.svg)
 
 To return from a procedure, you pop your return value into the `AX` register and call the `RET` instruction.
 The `RET` instruction will restore the old frame pointer, jump to the return address and pop all arguments off the stack.
