@@ -46,7 +46,7 @@ It is written in [Crystal](https://crystal-lang.org).
 | RET    |           | Consumes the last stack frame, resets the frame pointer, jumps back to the return address and pops off all arguments |
 | PREG   | reg       | Prints the value of a given register                                                                                 |
 | PTOP   |           | Prints the top of the stack                                                                                          |
-| HALT   |           | Halts the machine                                                                                                    |
+| HALT   |           | Puts top of the stack into the `EXT` register and halts the machine (by setting the `REG` register to 1)             |
 | NOP    |           | Does nothing                                                                                                         |
 
 ## Registers
@@ -60,6 +60,17 @@ It is written in [Crystal](https://crystal-lang.org).
 | FP       | Frame pointer                          |
 | RUN      | Set to 0 while the machine is running  |
 | EXT      | Exit code                              |
+
+## Error codes
+
+| Code | Description                            |
+|------|----------------------------------------|
+| 0    | Stack overflow                         |
+| 1    | Stack underflow                        |
+| 2    | Unknown instruction                    |
+| 3    | Missing arguments                      |
+| 4    | Unknown register                       |
+| 5    | Illegal memory access                  |
 
 ## Procedures
 
@@ -78,6 +89,14 @@ To return from a procedure, you pop your return value into the `AX` register and
 The `RET` instruction will restore the old frame pointer, jump to the return address and pop all arguments off the stack.
 
 The current top of the stack is now the value it was before you pushed all the arguments onto it.
+
+The program in the above image will produce an output like the following:
+
+```bash
+$ ./vm asm test.asm > test.bc
+$ ./vm run test.bc
+30
+```
 
 ## Contributing
 
