@@ -51,15 +51,33 @@ It is written in [Crystal](https://crystal-lang.org).
 
 ## Registers
 
-| Name     | Purpose         |
-|----------|-----------------|
-| R0 .. R9 | General purpose |
+| Name     | Purpose                                |
+|----------|----------------------------------------|
+| R0 .. R9 | General purpose                        |
 | AX       | Functions may return via this register |
-| IP       | Instruction pointer |
-| SP       | Stack pointer |
-| FP       | Frame pointer |
-| RUN      | Set to 0 while the machine is running |
-| EXT      | Exit code |
+| IP       | Instruction pointer                    |
+| SP       | Stack pointer                          |
+| FP       | Frame pointer                          |
+| RUN      | Set to 0 while the machine is running  |
+| EXT      | Exit code                              |
+
+## Procedures
+
+The following section assumes you know what a stack frame and a call stack is.
+
+Before you can call the `CALL` instruction, you'll need to push all arguments onto the stack.
+Last, you need to push the amount of 32-bit integers, which are now on the stack, that make up the arguments.
+This is needed for the `RET` instruction which removes the arguments afterwards.
+
+When you call the `CALL` instruction, the virtual machine pushes the current instruction-pointer
+and the current frame-pointer onto the stack. The frame-pointer is then set to the current stack pointer.
+
+![Stack frame](docs/stack-frame.svg)
+
+To return from a procedure, you pop your return value into the `AX` register and call the `RET` instruction.
+The `RET` instruction will restore the old frame pointer, jump to the return address and pop all arguments off the stack.
+
+The current top of the stack is now the value it was before you pushed all the arguments onto it.
 
 ## Contributing
 
