@@ -9,44 +9,53 @@ module StackMachine
   # Virtual Machine
   class VM
     property regs : Slice(Int32) # registers
-    property memory : Slice(Int32) # stack
-    property data : Slice(Int32) # code memory
+
+    property memory : Pointer(Int32) # stack
+    property memory_size : Int32 # stack size
+
+    property data : Pointer(Int32) # code memory
+    property data_size : Int32 # code memory size
 
     # Initialize an empty VM
     def initialize
       @regs = Slice(Int32).new(REGISTER_COUNT, 0) # amount of registers defined in register.cr
-      @memory = Slice(Int32).empty
-      @data = Slice(Int32).empty
+      @memory = Pointer(Int32).malloc 0
+      @data = Pointer(Int32).malloc 0
+      @memory_size = 0
+      @data_size = 0
     end
 
     # Initialize with given amount of memory
-    def init(memory_size : Int32 = 1024)
-      @memory = Slice(Int32).new(memory_size, 0)
+    def init(@memory_size : Int32 = 1024)
+      @memory = Pointer(Int32).malloc @memory_size
     end
 
     # Clean up
     def clean
       @regs = Slice(Int32).new(REGISTER_COUNT, 0) # amount of registers defined in register.cr
-      @memory = Slice(Int32).empty
-      @data = Slice(Int32).empty
+      @memory = Pointer(Int32).malloc 0
+      @data = Pointer(Int32).malloc 0
+      @memory_size = 0
+      @data_size = 0
     end
 
     # Runs a Program
     def run(program : Program, arguments : Array(Int32))
 
       # initialize code memory
-      @data = Slice(Int32).new(program.data.size, NOP)
+      @data = Pointer(Int32).malloc program.data.size
+      @data_size = program.data.size
 
       # load the program into code memory
       program.data.each_with_index  do |opcode, index|
         @data[index] = opcode
       end
 
-      # initialize stack and frame pointers
+      # initialize registers
       @regs[SP] = -1
       @regs[FP] = -1
 
-      # load argc and argv into memory
+      # load argc and argv into stack memory
       i_push arguments.size
       arguments.each do |argument|
         i_push argument
@@ -186,7 +195,7 @@ module StackMachine
     private def i_push(value : Int32)
 
       # check that there is space on the stack
-      if @regs[SP] + 1 >= @memory.size
+      if @regs[SP] + 1 >= @memory_size
         @regs[RUN] = 1
         @regs[EXT] = STACK_OVERFLOW
         return nil
@@ -341,7 +350,7 @@ module StackMachine
       @regs[IP] += 1
 
       # make sure there are enough arguments
-      if reg_address < 0 || reg_address >= @data.size
+      if reg_address < 0 || reg_address >= @data_size
         @regs[RUN] = 1
         @regs[EXT] = MISSING_ARGUMENTS
         return
@@ -367,7 +376,7 @@ module StackMachine
       @regs[IP] += 1
 
       # make sure there are enough arguments
-      if reg_address < 0 || reg_address >= @data.size
+      if reg_address < 0 || reg_address >= @data_size
         @regs[RUN] = 1
         @regs[EXT] = MISSING_ARGUMENTS
         return
@@ -414,7 +423,7 @@ module StackMachine
       @regs[IP] += 2
 
       # make sure there are enough arguments
-      if register_address < 0 || value_address >= @data.size
+      if register_address < 0 || value_address >= @data_size
         @regs[RUN] = 1
         @regs[EXT] = MISSING_ARGUMENTS
         return
@@ -442,7 +451,7 @@ module StackMachine
       @regs[IP] += 1
 
       # make sure there are enough arguments
-      if diff_address < 0 || diff_address >= @data.size
+      if diff_address < 0 || diff_address >= @data_size
         @regs[RUN] = 1
         @regs[EXT] = MISSING_ARGUMENTS
         return
@@ -451,7 +460,7 @@ module StackMachine
       address = @regs[FP] + @data[diff_address]
 
       # check for out-of-bounds
-      if address < 0 || address >= @memory.size
+      if address < 0 || address >= @memory_size
         @regs[RUN] = 1
         @regs[EXT] = ILLEGAL_MEMORY_ACCESS
         return
@@ -469,7 +478,7 @@ module StackMachine
       @regs[IP] += 1
 
       # make sure there are enough arguments
-      if register_address < 0 || register_address >= @data.size
+      if register_address < 0 || register_address >= @data_size
         @regs[RUN] = 1
         @regs[EXT] = MISSING_ARGUMENTS
         return
@@ -479,7 +488,7 @@ module StackMachine
       address = @regs[FP] + offset
 
       # check for out-of-bounds memory read
-      if address < 0 || address >= @memory.size
+      if address < 0 || address >= @memory_size
         @regs[RUN] = 1
         @regs[EXT] = ILLEGAL_MEMORY_ACCESS
         return
@@ -498,7 +507,7 @@ module StackMachine
       @regs[IP] += 2
 
       # check for out of bounds
-      if value_address < 0 || diff_address >= @data.size
+      if value_address < 0 || diff_address >= @data_size
         @regs[RUN] = 1
         @regs[EXT] = MISSING_ARGUMENTS
         return
@@ -508,7 +517,7 @@ module StackMachine
       diff = @regs[FP] + @data[diff_address]
 
       # make sure the stack index is inside the memory area
-      if diff < 0 || diff >= @memory.size
+      if diff < 0 || diff >= @memory_size
         @regs[RUN] = 1
         @regs[EXT] = ILLEGAL_MEMORY_ACCESS
         return
@@ -526,7 +535,7 @@ module StackMachine
       @regs[IP] += 2
 
       # check out of bounds
-      if register_address < 0 || diff_address >= @data.size
+      if register_address < 0 || diff_address >= @data_size
         @regs[RUN] = 1
         @regs[EXT] = MISSING_ARGUMENTS
         return
@@ -536,7 +545,7 @@ module StackMachine
       diff = @regs[FP] + @data[diff_address]
 
       # make sure the stack index is inside the memory
-      if diff < 0 || diff >= @memory.size
+      if diff < 0 || diff >= @memory_size
         @regs[RUN] = 1
         @regs[EXT] = ILLEGAL_MEMORY_ACCESS
         return
@@ -561,7 +570,7 @@ module StackMachine
       @regs[IP] += 2
 
       # make sure there are enough arguments
-      if target_address < 0 || source_address >= @data.size
+      if target_address < 0 || source_address >= @data_size
         @regs[RUN] = 1
         @regs[EXT] = MISSING_ARGUMENTS
         return
@@ -588,7 +597,7 @@ module StackMachine
       @regs[IP] += 1
 
       # make sure there are enough arguments
-      if source_address < 0 || source_address >= @data.size
+      if source_address < 0 || source_address >= @data_size
         @regs[RUN] = 1
         @regs[EXT] = MISSING_ARGUMENTS
         return
@@ -614,7 +623,7 @@ module StackMachine
       @regs[IP] += 1
 
       # check if there is an argument
-      if arg_address < 0 || arg_address >= @data.size
+      if arg_address < 0 || arg_address >= @data_size
         @regs[RUN] = 1
         @regs[EXT] = MISSING_ARGUMENTS
         return
@@ -631,7 +640,7 @@ module StackMachine
       @regs[IP] += 1
 
       # check if there is an argument
-      if target_address < 0 || target_address >= @data.size
+      if target_address < 0 || target_address >= @data_size
         @regs[RUN] = 1
         @regs[EXT] = MISSING_ARGUMENTS
         return
@@ -703,7 +712,7 @@ module StackMachine
       jump_address = @regs[IP]
       @regs[IP] += 1
 
-      if jump_address < 0 || jump_address >= @data.size
+      if jump_address < 0 || jump_address >= @data_size
         @regs[RUN] = 1
         @regs[EXT] = MISSING_ARGUMENTS
         return
@@ -731,7 +740,7 @@ module StackMachine
       jump_address = @regs[IP]
       @regs[IP] += 1
 
-      if jump_address < 0 || jump_address >= @data.size
+      if jump_address < 0 || jump_address >= @data_size
         @regs[RUN] = 1
         @regs[EXT] = MISSING_ARGUMENTS
         return
@@ -750,7 +759,7 @@ module StackMachine
       jump_address = @regs[IP]
       @regs[IP] += 1
 
-      if jump_address < 0 || jump_address >= @data.size
+      if jump_address < 0 || jump_address >= @data_size
         @regs[RUN] = 1
         @regs[EXT] = MISSING_ARGUMENTS
         return
@@ -770,7 +779,7 @@ module StackMachine
       @regs[IP] += 1
 
       # check if there is an argument
-      if target_address < 0 || target_address >= @data.size
+      if target_address < 0 || target_address >= @data_size
         @regs[RUN] = 1
         @regs[EXT] = MISSING_ARGUMENTS
         return
@@ -779,7 +788,7 @@ module StackMachine
       target = @data[target_address]
 
       # check if the target address is inside data memory
-      if target < 0 || target >= @data.size
+      if target < 0 || target >= @data_size
         @regs[RUN] = 1
         @regs[EXT] = ILLEGAL_MEMORY_ACCESS
         return
@@ -824,7 +833,7 @@ module StackMachine
       register_address = @regs[IP]
       @regs[IP] += 1
 
-      if register_address < 0 || register_address >= @data.size
+      if register_address < 0 || register_address >= @data_size
         @regs[RUN] = 1
         @regs[EXT] = MISSING_ARGUMENTS
         return
