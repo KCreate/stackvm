@@ -32,7 +32,7 @@ module StackMachine
     end
 
     # Runs a Program
-    def run(program : Program)
+    def run(program : Program, arguments : Array(Int32))
 
       # initialize code memory
       @data = Slice(Int32).new(program.data.size, NOP)
@@ -45,6 +45,12 @@ module StackMachine
       # initialize stack and frame pointers
       @regs[SP] = -1
       @regs[FP] = -1
+
+      # load argc and argv into memory
+      i_push arguments.size
+      arguments.each do |argument|
+        i_push argument
+      end
 
       # begin executing the program
       return main_loop

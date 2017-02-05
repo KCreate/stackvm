@@ -33,7 +33,7 @@ module StackMachine
           return puts HELP
         end
 
-        return run arguments.shift
+        return run arguments.shift, arguments
       when "asm"
         if arguments.size == 0
           puts "Missing filename"
@@ -46,13 +46,20 @@ module StackMachine
       end
     end
 
-    def self.run(filename : String)
+    def self.run(filename : String, args)
       opcodes = BC::Reader.read filename
       program = Program.new opcodes
 
+      # prepare the arguments
+      args = args.map do |num|
+        num = num.to_i32?
+        next 0 unless num
+        num
+      end
+
       vm = VM.new
       vm.init
-      exit_code = vm.run program
+      exit_code = vm.run program, args
       vm.clean
       exit exit_code
     end
