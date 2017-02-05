@@ -76,7 +76,15 @@ module StackMachine::Assembler
     end
 
     def valid?
+
+      found_entry = false
+
       @mod.blocks.each do |block|
+
+        if block.name == "entry"
+          found_entry = true
+        end
+
         block.instructions.each do |instruction|
           unless INSTRUCTION_SIGNATURES.keys.includes? instruction.name
             raise SemanticError.new "#{instruction.name} is not a valid instruction name"
@@ -110,6 +118,10 @@ module StackMachine::Assembler
           end
 
         end
+      end
+
+      unless found_entry
+        raise SemanticError.new "Missing entry block"
       end
     end
   end
