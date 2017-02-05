@@ -72,12 +72,14 @@ module StackMachine::Assembler
     def build(source : String)
       mod = Parser.parse source
       mod = Semantic.new(mod).analyse
+      mod = align mod
 
       intermediate_opcodes = [] of Int32 | Label
 
       # codegen all instructions
       mod.blocks.each do |block|
         label_addresses[block.name] = intermediate_opcodes.size
+        puts "codegen block #{block.name}"
         codegen_block block, intermediate_opcodes
       end
 
@@ -111,6 +113,13 @@ module StackMachine::Assembler
           end
         end
       end
+    end
+
+    def align(mod)
+      mod.blocks.sort_by! do |block|
+        block.name == "entry" ? 0 : 1
+      end
+      mod
     end
 
   end
