@@ -79,7 +79,6 @@ module StackMachine::Assembler
       # codegen all instructions
       mod.blocks.each do |block|
         label_addresses[block.name] = intermediate_opcodes.size
-        puts "codegen block #{block.name}"
         codegen_block block, intermediate_opcodes
       end
 

@@ -79,7 +79,14 @@ module StackMachine::Assembler
 
       found_entry = false
 
+      declared_block_names = [] of String
       @mod.blocks.each do |block|
+
+        if declared_block_names.includes? block.name
+          raise SemanticError.new "Duplicate declaration of block #{block.name}"
+        end
+
+        declared_block_names << block.name
 
         if block.name == "entry"
           found_entry = true
