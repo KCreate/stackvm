@@ -1,0 +1,27 @@
+entry:
+  loadr %r0 10
+  loadr %r1 10
+loop:
+
+  ; bail out if we reached zero
+  pushr %r0
+  jz @exit
+
+  ; print the state
+  pushr %r1
+  ptop
+
+  ; update the accumulator
+  pushr %r0
+  pushr %r1
+  mul
+  pop %r1
+
+  ; decrement the multiplier
+  decr %r0
+
+  ; loop
+  jmp @loop
+exit:
+  push 0
+  halt
