@@ -29,6 +29,7 @@ It is written in [Crystal](https://crystal-lang.org).
 | DEC    |           | Decrements the value on top of the stack                                                                             |
 | LOADR  | reg, val  | Loads a value into a given register                                                                                  |
 | LOAD   | diff      | Pushes the value at `fp + diff` in memory onto the stack                                                             |
+| RLOAD  | reg       | Pushes the value at `fp + [reg]` in memory onto the stack                                                            |
 | STORE  | val, diff | Stores a value at `fp + diff` in memory                                                                              |
 | STORER | reg, diff | Stores the value of a register at `fp + diff` in memory                                                              |
 | MOV    | src, dst  | Copies the value of the source register into the destination register                                                |

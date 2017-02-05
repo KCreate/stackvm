@@ -20,6 +20,7 @@ module StackMachine::Assembler
     "dec" => [] of ASTNode.class,
     "loadr" => [Register, Number],
     "load" => [Number],
+    "rload" => [Register],
     "store" => [Number, Number],
     "storer" => [Register, Number],
     "mov" => [Register, Register],

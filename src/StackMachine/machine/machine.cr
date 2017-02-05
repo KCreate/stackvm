@@ -112,6 +112,8 @@ module StackMachine
         return op_loadr
       when LOAD
         return op_load
+      when RLOAD
+        return op_rload
       when STORE
         return op_store
       when STORER
@@ -443,6 +445,34 @@ module StackMachine
       address = @regs[FP] + @data[diff_address]
 
       # check for out-of-bounds
+      if address < 0 || address >= @memory.size
+        @regs[RUN] = 1
+        @regs[EXT] = ILLEGAL_MEMORY_ACCESS
+        return
+      end
+
+      i_push @memory[address]
+    end
+
+    # Executes a RLOAD instruction
+    #
+    # Loads a offset from a given register
+    # and loads the value at fp + diff onto the stack
+    private def op_rload
+      register_address = @regs[IP]
+      @regs[IP] += 1
+
+      # make sure there are enough arguments
+      if register_address < 0 || register_address >= @data.size
+        @regs[RUN] = 1
+        @regs[EXT] = MISSING_ARGUMENTS
+        return
+      end
+
+      offset = @regs[@data[register_address]]
+      address = @regs[FP] + offset
+
+      # check for out-of-bounds memory read
       if address < 0 || address >= @memory.size
         @regs[RUN] = 1
         @regs[EXT] = ILLEGAL_MEMORY_ACCESS
