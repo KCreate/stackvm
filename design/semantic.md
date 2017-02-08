@@ -11,15 +11,16 @@ The machine follows the model of a stack-machine, but still supports the use of 
 
 ## Registers
 
-| Name           | Opcode           | Description         |
-|----------------|------------------|---------------------|
-| `r0` .. `r15`  | `0x00` .. `0x0F` | General purpose     |
-| `ip`           | `0x10`           | Instruction pointer |
-| `sp`           | `0x11`           | Stack pointer       |
-| `fp`           | `0x12`           | Frame pointer       |
-| `ax`           | `0x13`           | Return register     |
-| `gbg`          | `0x14`           | Garbage register    |
-| `cx0` .. `cx2` | `0x15` .. `0x16` | Counter registers   |
+| Name           | Opcode           | Description          |
+|----------------|------------------|----------------------|
+| `r0` .. `r15`  | `0x00` .. `0x0F` | General purpose      |
+| `ip`           | `0x10`           | Instruction pointer  |
+| `sp`           | `0x11`           | Stack pointer        |
+| `fp`           | `0x12`           | Frame pointer        |
+| `ax`           | `0x13`           | Return register      |
+| `gbg`          | `0x14`           | Garbage register     |
+| `jmp`          | `0x15`           | Jump target register |
+| `cx0` .. `cx2` | `0x16` .. `0x17` | Counter registers    |
 
 Each register can hold a 64-bit value.
 
@@ -126,23 +127,32 @@ They are order-insensitive and can also be duplicated (e.g `push.i32.i32` is equ
 
 When encoding immediate values, these headers bits have no meaning and are simply ignored.
 
+## Instruction descriptions
+
+Each instruction in the machine is documented below. The `Arguments` section, if present, follows the following naming convention:
+
+- `value` Value of the same size as the instruction.
+- `reg` The name of a register prefixed with a `%` character. (8-bits)
+- `type` Size specifier (e.g `BYTE` or `WORD`). (8-bits)
+- `label` A block label (e.g `@main` or `@loop`) (64-bits)
+
 ## Reading from and writing to registers
 
-| Name     | Arguments      | Description                                                                        |
-|----------|----------------|------------------------------------------------------------------------------------|
-| `PUSHR`  | reg            | Load the value of a register onto the stack                                        |
-| `LOADR`  | reg, value     | Load a given value into a register                                                 |
-| `POPR`   | reg            | Pop the top of the stack into a register                                           |
-| `INCR`   | reg            | Increment the value inside a register by 1                                         |
-| `DECR`   | reg            | Decrement the value inside a register by 1                                         |
-| `LOADR`  | reg            | Load the value at the stack-address at `fp + [reg]`                                |
-| `STORER` | reg, source    | Load the value inside the source register, onto the stack-address at `fp + [reg]`  |
-| `MOV`    | target, source | Copies the contents of the source register into the target register                |
+| Name     | Arguments      | Description                                                                       |
+|----------|----------------|-----------------------------------------------------------------------------------|
+| `PUSHR`  | reg            | Load the value of a register onto the stack                                       |
+| `LOADR`  | reg, value     | Load a given value into a register                                                |
+| `POPR`   | reg            | Pop the top of the stack into a register                                          |
+| `INCR`   | reg            | Increment the value inside a register by 1                                        |
+| `DECR`   | reg            | Decrement the value inside a register by 1                                        |
+| `LOADR`  | reg            | Load the value at the stack-address at `fp + [reg]`                               |
+| `STORER` | reg, source    | Load the value inside the source register, onto the stack-address at `fp + [reg]` |
+| `MOV`    | target, source | Copies the contents of the source register into the target register               |
 
 ## Arithmetic instructions
 
-| Name | Description                                                 |
-|------|-------------------------------------------------------------|
+| Name   | Description                                                 |
+|--------|-------------------------------------------------------------|
 | `ADD`  | Push the sum of the top two values                          |
 | `SUB`  | Push the difference of the top two values (`lower - upper`) |
 | `MUL`  | Push the product of the top two values                      |
@@ -152,27 +162,38 @@ When encoding immediate values, these headers bits have no meaning and are simpl
 
 ## Comparison instructions
 
+| Name  | Description                                                         |
+|-------|---------------------------------------------------------------------|
+| `CMP` | Push 0 if the top two values are equal                              |
+| `LT`  | Push 0 if the second-highest value is less than the top             |
+| `GT`  | Push 0 if the second-highest value is greater than the top          |
+| `LTE` | Push 0 if the second-highest value is less or equal than the top    |
+| `GTE` | Push 0 if the second-highest value is greater or equal than the top |
+
 ## Bitwise instructions
 
-| Name | Description                                                             |
-|------|-------------------------------------------------------------------------|
+| Name   | Description                                                             |
+|--------|-------------------------------------------------------------------------|
 | `SHR`  | Shift the bits of the top value to the right n times (`lower >> upper`) |
 | `SHL`  | Shift the bits of the top value to the left n times (`lower >> upper`)  |
 | `AND`  | Push bitwise AND of the top two values (`lower & upper`)                |
 | `XOR`  | Push bitwise OR of the top two values (`lower ^ upper`)                 |
 | `NAND` | Push bitwise NAND of the top two values (`~(lower & upper)`)            |
-| `OR`   | Push bitwise OR of the top two values (`lower | upper`)                 |
+| `OR`   | Push bitwise OR of the top two values (`lower OR upper`)                |
 | `NOT`  | Push bitwise NOT of the top value                                       |
 
 ## Casting instructions
 
 All instructions below use the `B` field of the instruction-header as the starting-type.
 
-| Name | Arguments | Description |
-|-|-|-|
-| `TR` | type | Truncate a value to the size of `type` |
-| `SE` | type | Sign-extend a value to the size of `type` |
-| `ZE` | type | Zero-extend a value to the size of `type` |
+| Name | Arguments | Description                               |
+|------|-----------|-------------------------------------------|
+| `TR` | type      | Truncate a value to the size of `type`    |
+| `SE` | type      | Sign-extend a value to the size of `type` |
+| `ZE` | type      | Zero-extend a value to the size of `type` |
+
+In the case that the `S` bit in the `SE` instruction is set to `1`,
+the value will be truncated while keeping the original sign.
 
 ## Stack manipulation instructions
 
@@ -180,15 +201,23 @@ All instructions below use the `B` field of the instruction-header as the starti
 
 ## Jump instructions
 
+| Name   | Arguments | Description                                                                   |
+|--------|-----------|-------------------------------------------------------------------------------|
+| `JMP`  | label     | Unconditionally jumps to the given label                                      |
+| `JZ`   | label     | Jumps to the given label if the top of the stack is zero                      |
+| `JNZ`  | label     | Jumps to the given label if the top of the stack is not zero                  |
+| `CALL` | label     | Calls the given label, pushing a new stack frame                              |
+| `RET`  |           | Returns from the current stack frame and passes control back to the last one. |
+
 ## I/O instructions
 
 ## Miscellaneous instructions
 
 The instructions below provide some useful functions.
 
-| Name | Description |
-|-|-|
-| `NOP` | Does nothing |
-| `HALT` | Halts the machine |
-| `STARTUP` | Pushes the amount of milliseconds since `Epoch` (i64) |
+| Name       | Description                                                                         |
+|------------|-------------------------------------------------------------------------------------|
+| `NOP`      | Does nothing                                                                        |
+| `HALT`     | Halts the machine                                                                   |
+| `STARTUP`  | Pushes the amount of milliseconds since `Epoch` (i64)                               |
 | `LIFETIME` | Pushes the amount of milliseconds that passed since the machine was turned on (i64) |
