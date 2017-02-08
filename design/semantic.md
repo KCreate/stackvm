@@ -14,7 +14,7 @@ The machine follows the model of a stack-machine, but still supports the use of 
 | Name           | Opcode           | Description         |
 |----------------|------------------|---------------------|
 | `r0` .. `r15`  | `0x00` .. `0x0F` | General purpose     |
-| `ip`           | `0x10`           | Instruction pointer |
+| `ip`           | `0x10`           | Instruction pointer |
 | `sp`           | `0x11`           | Stack pointer       |
 | `fp`           | `0x12`           | Frame pointer       |
 | `ax`           | `0x13`           | Return register     |
@@ -176,8 +176,19 @@ All instructions below use the `B` field of the instruction-header as the starti
 
 ## Stack manipulation instructions
 
-## Memory read and write instructions
+## Heap manipulation instructions
 
 ## Jump instructions
 
+## I/O instructions
+
 ## Miscellaneous instructions
+
+The instructions below provide some useful functions.
+
+| Name | Description |
+|-|-|
+| `NOP` | Does nothing |
+| `HALT` | Halts the machine |
+| `STARTUP` | Pushes the amount of milliseconds since `Epoch` (i64) |
+| `LIFETIME` | Pushes the amount of milliseconds that passed since the machine was turned on (i64) |
