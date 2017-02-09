@@ -85,14 +85,21 @@ Available size types are:
 - `DWORD` - `32-bits`
 - `QWORD` - `64-bits`
 
-You can use these types in places where an argument expects a type (e.g `TR`, `SE` or `ZE`).
+You can use these types in places where an instruction expects a type (e.g `TR`, `SE` or `ZE`).
+
+Each size type takes up 8 bits.
+
+If you need to specify a type which exceeds 4 bytes, a single 8-bit numeric value can be provided.
+Given the number `8` the amount of bytes is derived via `2 ** (8 - 1)`, thus yielding 16 bytes.
 
 ## Instructions
 
 Each instruction consists of 16-bits.
 
 The first three bits make up the header. It contains information about the signedness of the instruction
-and on what type it should operate on. Each part of the header has it's own name (`S`, `T`, `B`)
+and on what type it should operate on.
+
+Each part of the header has it's own name (`S`, `T`, `B`)
 
 In the below diagram, `0` stands for the left value and `1` for the right value.
 
@@ -196,6 +203,17 @@ In the case that the `S` bit in the `SE` instruction is set to `1`,
 the value will be truncated while keeping the original sign.
 
 ## Stack manipulation instructions
+
+| Name | Arguments | Description |
+|-|-|-|
+| `LOAD` | type, offset | Load a given amount of bytes located at `fp + offset` |
+| `LOADR` | type, reg | Load a given amount of bytes located at `fp + [reg]` |
+| `STORE` | type, offset | Pop a given amount of bytes and save at `fp + offset` |
+| `STORER` | type, reg | Pop a given amount of bytes and save at `fp + [reg]` |
+| `POP` | type | Pop a given amount of bytes into the `gbg` register |
+
+> Note: When using `POP` with more than the max size of the `gbg` register,
+the value will be truncated.
 
 ## Heap manipulation instructions
 
