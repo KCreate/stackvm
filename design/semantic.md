@@ -203,13 +203,13 @@ the value will be truncated while keeping the original sign.
 
 ## Stack manipulation instructions
 
-| Name | Arguments | Description |
-|-|-|-|
-| `LOAD` | type, offset | Load a given amount of bytes located at `fp + offset` |
-| `LOADR` | type, reg | Load a given amount of bytes located at `fp + [reg]` |
-| `STORE` | type, offset | Pop a given amount of bytes and save at `fp + offset` |
-| `STORER` | type, reg | Pop a given amount of bytes and save at `fp + [reg]` |
-| `POP` | type | Pop a given amount of bytes into the `gbg` register |
+| Name     | Arguments    | Description                                           |
+|----------|--------------|-------------------------------------------------------|
+| `LOAD`   | type, offset | Load a given amount of bytes located at `fp + offset` |
+| `LOADR`  | type, reg    | Load a given amount of bytes located at `fp + [reg]`  |
+| `STORE`  | type, offset | Pop a given amount of bytes and save at `fp + offset` |
+| `STORER` | type, reg    | Pop a given amount of bytes and save at `fp + [reg]`  |
+| `POP`    | type         | Pop a given amount of bytes into the `gbg` register   |
 
 > Note: When using `POP` with more than the max size of the `gbg` register,
 the value will be truncated.
