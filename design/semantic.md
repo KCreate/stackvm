@@ -216,6 +216,21 @@ the value will be truncated.
 
 ## Heap manipulation instructions
 
+These instructions and addresses operate on heap memory.
+
+| Name     | Arguments            | Description                                                              |
+|----------|----------------------|--------------------------------------------------------------------------|
+| `READ`   | type, address        | Read a *type* value from *address* and pushes it onto the stack          |
+| `READR`  | type, reg            | Read a *type* value from `[reg]` and pushes it onto the stack            |
+| `WRITE`  | type, address        | Reads a *type* value from the stack and writes it to the given *address* |
+| `WRITER` | type, reg            | Reads a *type* value from the stack and writes it to `[reg]`             |
+| `COPY`   | type, target, source | Reads a *type* value at *source* and writes it to the given *target*     |
+| `COPYR`  | type, target, source | Reads a *type* value from `[source]` and writes it to `[target]`         |
+
+> Note: `WRITE` and `WRITER` don't remove anything from the stack.
+
+Out-of-bounds reads or writes may cause unexpected behaviour.
+
 ## Jump instructions
 
 | Name   | Arguments | Description                                                                   |
