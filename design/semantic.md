@@ -19,8 +19,7 @@ The machine follows the model of a stack-machine, but still supports the use of 
 | `fp`           | `0x12`           | Frame pointer        |
 | `ax`           | `0x13`           | Return register      |
 | `gbg`          | `0x14`           | Garbage register     |
-| `jmp`          | `0x15`           | Jump target register |
-| `cx0` .. `cx2` | `0x16` .. `0x17` | Counter registers    |
+| `cx0` .. `cx2` | `0x15` .. `0x16` | Counter registers    |
 
 Each register can hold a 64-bit value.
 
