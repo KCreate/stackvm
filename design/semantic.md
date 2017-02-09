@@ -226,8 +226,6 @@ the value will be truncated.
 | `CALL` | label     | Calls the given label, pushing a new stack frame                              |
 | `RET`  |           | Returns from the current stack frame and passes control back to the last one. |
 
-## I/O instructions
-
 ## Miscellaneous instructions
 
 The instructions below provide some useful functions.
