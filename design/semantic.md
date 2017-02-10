@@ -7,7 +7,8 @@ we refer to it as `the machine`.
 This document contains the specification for registers, error codes, available instructions,
 the instruction format and supported types of the machine.
 
-The machine follows the model of a stack-machine, but still supports the use of registers and linear random-access-memory.
+The machine follows the model of a stack-machine, but still supports the use of registers
+and linear random-access-memory.
 
 ## Registers
 
@@ -135,12 +136,16 @@ When encoding immediate values, these headers bits have no meaning and are simpl
 
 ## Instruction descriptions
 
-Each instruction in the machine is documented below. The `Arguments` section, if present, follows the following naming convention:
+Each instruction in the machine is documented below.
+The `Arguments` section, if present, follows the following naming convention:
 
 - `value` Value of the same size as the instruction.
 - `reg` The name of a register prefixed with a `%` character. (8-bits)
 - `type` Size specifier (e.g `BYTE` or `WORD`). (8-bits)
 - `label` A block label (e.g `@main` or `@loop`) (64-bits)
+
+If a register or argument name is displayed with brackets around it (e.g `[source]` or `[r0]`)
+the value inside the register is meant.
 
 ## Reading from and writing to registers
 
@@ -233,13 +238,17 @@ Out-of-bounds reads or writes may cause unexpected behaviour.
 
 ## Jump instructions
 
-| Name   | Arguments | Description                                                                   |
-|--------|-----------|-------------------------------------------------------------------------------|
-| `JMP`  | label     | Unconditionally jumps to the given label                                      |
-| `JZ`   | label     | Jumps to the given label if the top of the stack is zero                      |
-| `JNZ`  | label     | Jumps to the given label if the top of the stack is not zero                  |
-| `CALL` | label     | Calls the given label, pushing a new stack frame                              |
-| `RET`  |           | Returns from the current stack frame and passes control back to the last one. |
+| Name     | Arguments | Description                                                                   |
+|----------|-----------|-------------------------------------------------------------------------------|
+| `JMP`    | label     | Unconditionally jumps to the given label                                      |
+| `JMPR`   | reg       | Unconditionally jumps to the address in `[reg]`                               |
+| `JZ`     | label     | Jumps to the given label if the top of the stack is zero                      |
+| `JZR`    | reg       | Jumps to the address in `[reg]` if the top of the stack is zero               |
+| `JNZ`    | label     | Jumps to the given label if the top of the stack is not zero                  |
+| `JNZR`   | reg       | Jumps to the address in `[reg]` if the top of the stack is not zero           |
+| `CALL`   | label     | Calls the given label, pushing a new stack frame                              |
+| `CALLR`  | reg       | Calls the address in `[reg]`, pushing a new stack frame                       |
+| `RET`    |           | Returns from the current stack frame and passes control back to the last one. |
 
 ## Miscellaneous instructions
 
@@ -249,8 +258,6 @@ The instructions below provide some useful functions.
 |------------|-------------------------------------------------------------------------------------|
 | `NOP`      | Does nothing                                                                        |
 | `HALT`     | Halts the machine                                                                   |
-| `STARTUP`  | Pushes the amount of milliseconds since `Epoch` (i64)                               |
-| `LIFETIME` | Pushes the amount of milliseconds that passed since the machine was turned on (i64) |
 
 ## License
 
