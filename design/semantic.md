@@ -149,16 +149,14 @@ the value inside the register is meant.
 
 ## Reading from and writing to registers
 
-| Name     | Arguments      | Description                                                                       |
-|----------|----------------|-----------------------------------------------------------------------------------|
-| `PUSHR`  | reg            | Load the value of a register onto the stack                                       |
-| `LOADR`  | reg, value     | Load a given value into a register                                                |
-| `POPR`   | reg            | Pop the top of the stack into a register                                          |
-| `INCR`   | reg            | Increment the value inside a register by 1                                        |
-| `DECR`   | reg            | Decrement the value inside a register by 1                                        |
-| `LOADR`  | reg            | Load the value at the stack-address at `fp + [reg]`                               |
-| `STORER` | reg, source    | Load the value inside the source register, onto the stack-address at `fp + [reg]` |
-| `MOV`    | target, source | Copies the contents of the source register into the target register               |
+| Name     | Arguments      | Description                                                         |
+|----------|----------------|---------------------------------------------------------------------|
+| `RPUSH`  | reg   | Push the value of a register onto the stack                                  |
+| `RPOP`   | reg   | Pop the top of the stack into a register                                     |
+| `RLOAD`  | value | Push a value into a register                                                 |
+| `INCR`   | reg            | Increment the value inside a register by 1                          |
+| `DECR`   | reg            | Decrement the value inside a register by 1                          |
+| `MOV`    | target, source | Copies the contents of the source register into the target register |
 
 ## Arithmetic instructions
 
@@ -208,13 +206,15 @@ the value will be truncated while keeping the original sign.
 
 ## Stack manipulation instructions
 
-| Name     | Arguments    | Description                                           |
-|----------|--------------|-------------------------------------------------------|
-| `LOAD`   | type, offset | Load a given amount of bytes located at `fp + offset` |
-| `LOADR`  | type, reg    | Load a given amount of bytes located at `fp + [reg]`  |
-| `STORE`  | type, offset | Pop a given amount of bytes and save at `fp + offset` |
-| `STORER` | type, reg    | Pop a given amount of bytes and save at `fp + [reg]`  |
-| `POP`    | type         | Pop a given amount of bytes into the `gbg` register   |
+| Name     | Arguments    | Description                                  |
+|----------|--------------|----------------------------------------------|
+| `LOAD`   | type, offset | Load a *type* value located at `fp + offset` |
+| `LOADR`  | type, reg    | Load a *type* value located at `fp + [reg]`  |
+| `STORE`  | type, offset | Pop a *type* value and save at `fp + offset` |
+| `STORER` | type, reg    | Pop a *type* value and save at `fp + [reg]`  |
+| `INC`    | type, offset | Increment a *type* value at `fp + offset`    |
+| `DEC`    | type, offset | Decrement a *type* value at `fp + offset`    |
+| `POP`    | type         | Pop a *type* value into the `gbg` register   |
 
 > Note: When using `POP` with more than the max size of the `gbg` register,
 the value will be truncated.
@@ -254,10 +254,10 @@ Out-of-bounds reads or writes may cause unexpected behaviour.
 
 The instructions below provide some useful functions.
 
-| Name       | Description                                                                         |
-|------------|-------------------------------------------------------------------------------------|
-| `NOP`      | Does nothing                                                                        |
-| `HALT`     | Halts the machine                                                                   |
+| Name       | Description       |
+|------------|-------------------|
+| `NOP`      | Does nothing      |
+| `HALT`     | Halts the machine |
 
 ## License
 
