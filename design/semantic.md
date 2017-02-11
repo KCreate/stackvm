@@ -10,6 +10,17 @@ the instruction format and supported types of the machine.
 The machine follows the model of a stack-machine, but still supports the use of registers
 and linear random-access-memory.
 
+## Error codes
+
+| Name                    | Value  | Description                                                       |
+|-------------------------|--------|-------------------------------------------------------------------|
+| `STACKOVERFLOW`         | `0x00` | Operation would overflow the stack                                |
+| `STACKUNDERFLOW`        | `0x01` | Operation would underflow the stack (e.g `POP` on an empty stack) |
+| `ILLEGAL_MEMORY_ACCESS` | `0x02` | Memory read or write is out-of-bounds                             |
+| `INVALID_INSTRUCTION`   | `0x03` | Unknown instruction                                               |
+| `INVALID_REGISTER`      | `0x04` | Unknown register                                                  |
+| `INVALID_JUMP`          | `0x05` | Trying to jump to an address that's out of bounds                 |
+
 ## Registers
 
 | Name           | Opcode           | Description          |
