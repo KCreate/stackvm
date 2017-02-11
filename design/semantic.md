@@ -4,8 +4,10 @@
 > The virtual machine doesn't have a name yet, but to keep it short,
 we refer to it as `the machine`.
 
-This document contains the specification for registers, error codes, available instructions,
-the instruction format and supported types of the machine.
+This document contains the specification for available registers, error codes,
+a list of instructions together with their arguments and descriptions.
+
+For the specification on binary encoding, check the [encoding.md](./encoding.md) file.
 
 The machine follows the model of a stack-machine, but still supports the use of registers
 and linear random-access-memory.
@@ -23,15 +25,15 @@ and linear random-access-memory.
 
 ## Registers
 
-| Name           | Opcode           | Description          |
-|----------------|------------------|----------------------|
-| `r0` .. `r15`  | `0x00` .. `0x0F` | General purpose      |
-| `ip`           | `0x10`           | Instruction pointer  |
-| `sp`           | `0x11`           | Stack pointer        |
-| `fp`           | `0x12`           | Frame pointer        |
-| `ax`           | `0x13`           | Return register      |
-| `gbg`          | `0x14`           | Garbage register     |
-| `cx0` .. `cx2` | `0x15` .. `0x16` | Counter registers    |
+| Name           | Description         |
+|----------------|---------------------|
+| `r0` .. `r15`  | General purpose     |
+| `ip`           | Instruction pointer |
+| `sp`           | Stack pointer       |
+| `fp`           | Frame pointer       |
+| `ax`           | Return register     |
+| `gbg`          | Garbage register    |
+| `cx0` .. `cx2` | Counter registers   |
 
 Each register can hold a 64-bit value.
 
