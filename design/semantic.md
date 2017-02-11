@@ -74,11 +74,11 @@ Calculations inside the machine support the following types:
 
 Neither of these values are inherently signed or unsigned, the operations on them however are.
 
-## Size types
+## Size specifiers
 
-Size types differ from regular types in the sense that they only limit the amount of bytes used for a value type.
+Size specifiers can be used to describe a given amount of bytes.
 
-Available size types are:
+A few constants are available for commonly used sizes.
 
 - `BYTE` - `8-bits`
 - `WORD` - `16-bits`
@@ -87,37 +87,9 @@ Available size types are:
 
 You can use these types in places where an instruction expects a type (e.g `TR`, `SE` or `ZE`).
 
-Each size type takes up 8 bits.
-
-If you need to specify a type which exceeds 4 bytes, a single 8-bit numeric value can be provided.
-Given the number `8` the amount of bytes is derived via `2 ** (8 - 1)`, thus yielding 16 bytes.
-
 ## Instructions
 
-Each instruction consists of 16-bits.
-
-The first three bits make up the header. It contains information about the signedness of the instruction
-and on what type it should operate on.
-
-Each part of the header has it's own name (`S`, `T`, `B`)
-
-In the below diagram, `0` stands for the left value and `1` for the right value.
-
-```
-+- Header
-|
-|   +- Instruction opcode
-|   |
-vvv vvvvvvvvvvvvv
-000 0000000000000
-^^^
-|||
-||+- B - 32-bit / 64-bit
-||
-|+- T - Integer / Floating-point
-|
-+- S - Signed / Unsigned
-```
+Instructions are written using their name and zero or more modifiers to oeprate on the instruction header.
 
 You can set these header bits by adding the corresponding suffixes to the instruction name.
 The suffixes are separated via a dot (`.`) character from each other and from the instruction.
@@ -134,6 +106,9 @@ They are order-insensitive and can also be duplicated (e.g `push.i32.i32` is equ
 
 When encoding immediate values, these headers bits have no meaning and are simply ignored.
 
+The `B` bit only has meaning for arithmetic or comparison instructions.
+If an instruction takes its size via an argument, the `B` is irrelevant unless stated otherwise.
+
 ## Instruction descriptions
 
 Each instruction in the machine is documented below.
@@ -141,7 +116,7 @@ The `Arguments` section, if present, follows the following naming convention:
 
 - `value` Value of the same size as the instruction.
 - `reg` The name of a register prefixed with a `%` character. (8-bits)
-- `type` Size specifier (e.g `BYTE` or `WORD`). (8-bits)
+- `type` Size specifier (e.g `BYTE` or `WORD`). (64-bits)
 - `label` A block label (e.g `@main` or `@loop`) (64-bits)
 
 If a register or argument name is displayed with brackets around it (e.g `[source]` or `[r0]`)
