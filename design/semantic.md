@@ -22,6 +22,8 @@ and linear random-access-memory.
 | `INVALID_INSTRUCTION`   | `0x03` | Unknown instruction                                               |
 | `INVALID_REGISTER`      | `0x04` | Unknown register                                                  |
 | `INVALID_JUMP`          | `0x05` | Trying to jump to an address that's out of bounds                 |
+| `INVALID_SYMBOL`        | `0x06` | Out-of-bounds symbol table index                                  |
+| `SYMBOL_TABLE_TOO_BIG`  | `0x07` | The loaded modules symbol table is too big                        |
 
 ## Registers
 
@@ -54,27 +56,20 @@ lr0 - 32-bits - Lower half         ur0 - 32-bits - Upper half
 
 ```
 
-When reading from these registers, they return a 32-bit integer.
+When reading from a sub-register, they return a 32-bit integer.
 If you write a value bigger than 32-bits to one of the sub-registers, the value will be truncated
 to fit (higher-order bits will be truncated).
 
-The `ip` register contains a pointer, pointing into heap memory, to the instruction that's next to be executed.
-Both the stack and frame-pointers point into stack memory.
+The `ip` register contains a pointer, pointing to the instruction that's next to be executed.
 
-Each register is represented as a 8-bit value.
+The `sp` register contains a pointer, pointing to the current top of the stack (-1 if stack is empty).
+
+The `fp` register contains a pointer, pointing to the base of the current stack-frame.
 
 ## Memory
 
-| Name  | Purpose                                   | Permissions          |
-|-------|-------------------------------------------|----------------------|
-| Stack | Calculations, Call stack                  | Read, Write          |
-| Heap  | Random-access-memory, instruction storage | Read, Write, Execute |
-
-These are two separate fixed-size regions of memory, not able to overlap.
-Both regions are addressable with 8-bit precision.
-
-For example, to read two 32-bit integers, you'd begin at memory offsets `0x00` and `0x04`.
-Similarly, to read two 64-bit integers, you'd use `0x00` and `0x08`.
+The machine can be initialized with a variable amount of memory. Unlike most other systems, the stack grows towards high
+addresses.
 
 ## Value types
 
@@ -112,6 +107,8 @@ They are order-insensitive and can also be duplicated (e.g `push.i32.i32` is equ
 |--------|------------------------------------------------|
 | `i`    | Sets the `S` bit to `0`                        |
 | `u`    | Sets the `S` bit to `1`                        |
+| `a`    | Sets the `T` bit to `1`                        |
+| `r`    | Sets the `T` bit to `0`                        |
 | `i32`  | Sets the `T` bit to `0` and the `B` bit to `0` |
 | `i64`  | Sets the `T` bit to `0` and the `B` bit to `1` |
 | `f32`  | Sets the `T` bit to `1` and the `B` bit to `0` |
@@ -128,9 +125,9 @@ Each instruction in the machine is documented below.
 The `Arguments` section, if present, follows the following naming convention:
 
 - `value` Value of the same size as the instruction.
-- `reg` The name of a register prefixed with a `%` character. (8-bits)
-- `type` Size specifier (e.g `BYTE` or `WORD`). (64-bits)
-- `label` A block label (e.g `@main` or `@loop`) (64-bits)
+- `reg` The name of a register prefixed with a `%` character.
+- `type` Size specifier (e.g `BYTE` or `WORD`).
+- `symbol` A symbol pointing to an entry in the modules symbol table.
 
 If a register or argument name is displayed with brackets around it (e.g `[source]` or `[r0]`)
 the value inside the register is meant.
@@ -139,9 +136,9 @@ the value inside the register is meant.
 
 | Name     | Arguments      | Description                                                         |
 |----------|----------------|---------------------------------------------------------------------|
-| `RPUSH`  | reg   | Push the value of a register onto the stack                                  |
-| `RPOP`   | reg   | Pop the top of the stack into a register                                     |
-| `RLOAD`  | value | Push a value into a register                                                 |
+| `RPUSH`  | reg            | Push the value of a register onto the stack                         |
+| `RPOP`   | reg            | Pop the top of the stack into a register                            |
+| `RLOAD`  | value          | Push a value into a register                                        |
 | `INCR`   | reg            | Increment the value inside a register by 1                          |
 | `DECR`   | reg            | Decrement the value inside a register by 1                          |
 | `MOV`    | target, source | Copies the contents of the source register into the target register |
@@ -158,6 +155,8 @@ the value inside the register is meant.
 | `EXP`  | Push the power of the top two values (`lower ** upper`)     |
 
 ## Comparison instructions
+
+All comparison instructions push a 32-bit integer onto the stack.
 
 | Name  | Description                                                         |
 |-------|---------------------------------------------------------------------|
@@ -207,36 +206,62 @@ the value will be truncated while keeping the original sign.
 > Note: When using `POP` with more than the max size of the `gbg` register,
 the value will be truncated.
 
-## Heap manipulation instructions
+## Memory read / write
 
-These instructions and addresses operate on heap memory.
-
-| Name     | Arguments            | Description                                                              |
-|----------|----------------------|--------------------------------------------------------------------------|
-| `READ`   | type, address        | Read a *type* value from *address* and pushes it onto the stack          |
-| `READR`  | type, reg            | Read a *type* value from `[reg]` and pushes it onto the stack            |
+| Name | Arguments | Description |
+|-|-|-|
+| `READ`   | type, address        | Read a *type* value from *address* and push it onto the stack          |
+| `READR`  | type, reg            | Read a *type* value from `[reg]` and push it onto the stack            |
+| `READS`  | symbol               | Put the value of a symbol onto the stack                                |
 | `WRITE`  | type, address        | Reads a *type* value from the stack and writes it to the given *address* |
 | `WRITER` | type, reg            | Reads a *type* value from the stack and writes it to `[reg]`             |
 | `COPY`   | type, target, source | Reads a *type* value at *source* and writes it to the given *target*     |
 | `COPYR`  | type, target, source | Reads a *type* value from `[source]` and writes it to `[target]`         |
 
-> Note: `WRITE` and `WRITER` don't remove anything from the stack.
-
-Out-of-bounds reads or writes may cause unexpected behaviour.
-
 ## Jump instructions
 
-| Name     | Arguments | Description                                                                   |
-|----------|-----------|-------------------------------------------------------------------------------|
-| `JMP`    | label     | Unconditionally jumps to the given label                                      |
-| `JMPR`   | reg       | Unconditionally jumps to the address in `[reg]`                               |
-| `JZ`     | label     | Jumps to the given label if the top of the stack is zero                      |
-| `JZR`    | reg       | Jumps to the address in `[reg]` if the top of the stack is zero               |
-| `JNZ`    | label     | Jumps to the given label if the top of the stack is not zero                  |
-| `JNZR`   | reg       | Jumps to the address in `[reg]` if the top of the stack is not zero           |
-| `CALL`   | label     | Calls the given label, pushing a new stack frame                              |
-| `CALLR`  | reg       | Calls the address in `[reg]`, pushing a new stack frame                       |
-| `RET`    |           | Returns from the current stack frame and passes control back to the last one. |
+Jump instructions allow you to jump to other places in your program.
+They can either be relative to the current address (default) or to an absolute offset.
+When multiple programs are compiled into a single module, absolute jumps may break.
+
+You can toggle between relative and absolute mode by setting the `T` bit on the instruction.
+Use the `r` and `a` suffixes on the instruction name to do so.
+
+You also have the ability to jump to a given symbol. This will perform a lookup in the modules symbol table,
+parse the target offset and jump to it. Symbol jumps have to be hardcoded as opposed to absolute or relative jumps.
+
+```
+; jumping 10 bytes forward
+jmp 10
+jmp.r 10
+
+; jumping to the address 10
+jmp.a 10
+
+; jumping to a given symbol
+jmps @mymethod
+jmps @myothermethod
+
+; calling a given symbol
+calls @mymethod
+calls @myothermethod
+```
+
+| Name    | Arguments | Description                                                              |
+|---------|-----------|--------------------------------------------------------------------------|
+| `JMP`   | offset    | Unconditional relative or absolute jump to given offset                  |
+| `JMPR`  | reg       | Unconditional relative or absolute jump to `[reg]`                       |
+| `JMPS`  | symbol    | Unconditional jump to symbol                                             |
+| `JZ`    | offset    | Relative or absolute jump to given offset if top of the stack is `0`     |
+| `JZR`   | reg       | Relative or absolute jump to `[reg]` if top of the stack is `0`          |
+| `JZS`   | symbol    | Jump to symbol if top of the stack is `0`                                |
+| `JNZ`   | offset    | Relative or absolute jump to given offset if top of the stack is not `0` |
+| `JNZR`  | reg       | Relative or absolute jump to `[reg]` if top of the stack is not `0`      |
+| `JNZS`  | symbol    | Jump to symbol if top of the stack is not `0`                            |
+| `CALL`  | offset    | Relative or absolute jump to given offset, pushing a stack-frame         |
+| `CALLR` | reg       | Relative or absolute jump to `[reg]`, pushing a stack-frame              |
+| `CALLS` | symbol    | Jump to symbol, pushing a stack-frame                                    |
+| `RET`   |           | Return from the current stack-frame                                      |
 
 ## Miscellaneous instructions
 
