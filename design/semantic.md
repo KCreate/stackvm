@@ -263,6 +263,23 @@ calls @myothermethod
 | `CALLS` | symbol    | Jump to symbol, pushing a stack-frame                                    |
 | `RET`   |           | Return from the current stack-frame                                      |
 
+## Symbol table instructions
+
+These instructions operate on the symbol table.
+
+| Name        | Arguments   | Description                                                             |
+|-------------|-------------|-------------------------------------------------------------------------|
+| `SYAMOUNT`  |             | Pushes the amount of registered symbols as a 32-bit integer             |
+| `SYOFFSET`  | symbol      | Pushes the offset of a given symbol                                     |
+| `SYSIZE`    | symbol      | Pushes the size of a given symbol                                       |
+| `SYNAME`    | symbol      | Pushes the name of a given symbol                                       |
+| `SYOFFSETR` | reg         | Pushes the offset of the symbol in `reg`                                |
+| `SYSIZER`   | reg         | Pushes the size of the symbol in `reg`                                  |
+| `SYNAMER`   | reg         | Pushes the name of the symbol in `reg`                                  |
+| `SYVALID`   | reg         | Pushes `0` if `[reg]` is a valid symbol, `1` if otherwise               |
+| `SYWRITE`   | reg, offset | Read a value from `offset` and write it to the symbol offset of `[reg]` |
+| `SYVALIDS`  | reg         | Pushes `0` if the null-terminated string `[reg]` is a existing symbol   |
+
 ## Miscellaneous instructions
 
 The instructions below provide some useful functions.
