@@ -1,9 +1,0 @@
-entry:
-  loadr %r0 10
-loop:
-  pushr %r0
-  ptop
-  decr %r0
-  jnz @loop
-  push 0
-  halt
