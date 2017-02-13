@@ -33,9 +33,6 @@ and linear random-access-memory.
 | `ip`           | Instruction pointer |
 | `sp`           | Stack pointer       |
 | `fp`           | Frame pointer       |
-| `ax`           | Return register     |
-| `gbg`          | Garbage register    |
-| `cx0` .. `cx2` | Counter registers   |
 
 Each register can hold a 64-bit value.
 

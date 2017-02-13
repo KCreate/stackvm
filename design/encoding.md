@@ -87,9 +87,6 @@ Bits 3 - 8 make up the register value.
 | `ip`           | `0x10`           |
 | `sp`           | `0x11`           |
 | `fp`           | `0x12`           |
-| `ax`           | `0x13`           |
-| `gbg`          | `0x14`           |
-| `cx0` .. `cx2` | `0x15` .. `0x17` |
 
 ## Instructions
 
