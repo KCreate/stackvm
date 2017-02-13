@@ -175,18 +175,13 @@ All comparison instructions push a 32-bit integer onto the stack.
 
 ## Casting instructions
 
-All instructions below use the `B` field of the instruction-header as the starting-type.
+| Name    | Arguments  | Description                                 |
+|---------|------------|---------------------------------------------|
+| `TRUNC` | type, type | Truncate a value from `type1` to `type2`    |
+| `SE`    | type, type | Sign-extend a value from `type1` to `type2` |
+| `ZE`    | type, type | Zero-extend a value from `type1` to `type2` |
 
-| Name | Arguments | Description                               |
-|------|-----------|-------------------------------------------|
-| `TR` | type      | Truncate a value to the size of `type`    |
-| `SE` | type      | Sign-extend a value to the size of `type` |
-| `ZE` | type      | Zero-extend a value to the size of `type` |
-
-In the case that the `S` bit in the `SE` instruction is set to `1`,
-the value will be truncated while keeping the original sign.
-
-## Stack manipulation instructions
+## Stackmanipulation instructions
 
 | Name     | Arguments    | Description                                  |
 |----------|--------------|----------------------------------------------|
