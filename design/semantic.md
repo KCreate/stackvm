@@ -205,11 +205,10 @@ the value will be truncated.
 
 ## Memory read / write
 
-| Name | Arguments | Description |
-|-|-|-|
-| `READ`   | type, address        | Read a *type* value from *address* and push it onto the stack          |
-| `READR`  | type, reg            | Read a *type* value from `[reg]` and push it onto the stack            |
-| `READS`  | symbol               | Put the value of a symbol onto the stack                                |
+| Name     | Arguments            | Description                                                              |
+|----------|----------------------|--------------------------------------------------------------------------|
+| `READ`   | type, address        | Read a *type* value from *address* and push it onto the stack            |
+| `READR`  | type, reg            | Read a *type* value from `[reg]` and push it onto the stack              |
 | `WRITE`  | type, address        | Reads a *type* value from the stack and writes it to the given *address* |
 | `WRITER` | type, reg            | Reads a *type* value from the stack and writes it to `[reg]`             |
 | `COPY`   | type, target, source | Reads a *type* value at *source* and writes it to the given *target*     |
@@ -281,10 +280,10 @@ These instructions operate on the symbol table.
 
 The instructions below provide some useful functions.
 
-| Name       | Description       |
-|------------|-------------------|
-| `NOP`      | Does nothing      |
-| `HALT`     | Halts the machine |
+| Name   | Description       |
+|--------|-------------------|
+| `NOP`  | Does nothing      |
+| `HALT` | Halts the machine |
 
 ## License
 
