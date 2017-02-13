@@ -22,8 +22,6 @@ and linear random-access-memory.
 | `INVALID_INSTRUCTION`   | `0x03` | Unknown instruction                                               |
 | `INVALID_REGISTER`      | `0x04` | Unknown register                                                  |
 | `INVALID_JUMP`          | `0x05` | Trying to jump to an address that's out of bounds                 |
-| `INVALID_SYMBOL`        | `0x06` | Out-of-bounds symbol table index                                  |
-| `SYMBOL_TABLE_TOO_BIG`  | `0x07` | The loaded modules symbol table is too big                        |
 
 ## Registers
 
@@ -104,8 +102,8 @@ They are order-insensitive and can also be duplicated (e.g `push.i32.i32` is equ
 |--------|------------------------------------------------|
 | `i`    | Sets the `S` bit to `0`                        |
 | `u`    | Sets the `S` bit to `1`                        |
-| `a`    | Sets the `T` bit to `1`                        |
-| `r`    | Sets the `T` bit to `0`                        |
+| `r`    | Sets the `T` bit to `1`                        |
+| `a`    | Sets the `T` bit to `0`                        |
 | `i32`  | Sets the `T` bit to `0` and the `B` bit to `0` |
 | `i64`  | Sets the `T` bit to `0` and the `B` bit to `1` |
 | `f32`  | Sets the `T` bit to `1` and the `B` bit to `0` |
@@ -217,64 +215,45 @@ the value will be truncated.
 ## Jump instructions
 
 Jump instructions allow you to jump to other places in your program.
-They can either be relative to the current address (default) or to an absolute offset.
-When multiple programs are compiled into a single module, absolute jumps may break.
+Jump instructions can either jump to an absolute offset (default),
+or relative to the current instruction by a given amount of bytes.
 
-You can toggle between relative and absolute mode by setting the `T` bit on the instruction.
+You can toggle between absolute and relative mode by setting the `T` bit on the instruction.
 Use the `r` and `a` suffixes on the instruction name to do so.
 
-You also have the ability to jump to a given symbol. This will perform a lookup in the modules symbol table,
-parse the target offset and jump to it. Symbol jumps have to be hardcoded as opposed to absolute or relative jumps.
-
 ```
-; jumping 10 bytes forward
+; jumping to a given address
 jmp 10
-jmp.r 10
-
-; jumping to the address 10
 jmp.a 10
 
-; jumping to a given symbol
-jmps @mymethod
-jmps @myothermethod
+; jumping 10 bytes forwards
+jmp.r 10
 
-; calling a given symbol
-calls @mymethod
-calls @myothermethod
+; jumping 10 bytes backwards
+jmp.r -10
 ```
 
 | Name    | Arguments | Description                                                              |
 |---------|-----------|--------------------------------------------------------------------------|
-| `JMP`   | offset    | Unconditional relative or absolute jump to given offset                  |
-| `JMPR`  | reg       | Unconditional relative or absolute jump to `[reg]`                       |
-| `JMPS`  | symbol    | Unconditional jump to symbol                                             |
 | `JZ`    | offset    | Relative or absolute jump to given offset if top of the stack is `0`     |
 | `JZR`   | reg       | Relative or absolute jump to `[reg]` if top of the stack is `0`          |
-| `JZS`   | symbol    | Jump to symbol if top of the stack is `0`                                |
 | `JNZ`   | offset    | Relative or absolute jump to given offset if top of the stack is not `0` |
 | `JNZR`  | reg       | Relative or absolute jump to `[reg]` if top of the stack is not `0`      |
-| `JNZS`  | symbol    | Jump to symbol if top of the stack is not `0`                            |
+| `JMP`   | offset    | Unconditional relative or absolute jump to given offset                  |
+| `JMPR`  | reg       | Unconditional relative or absolute jump to `[reg]`                       |
 | `CALL`  | offset    | Relative or absolute jump to given offset, pushing a stack-frame         |
 | `CALLR` | reg       | Relative or absolute jump to `[reg]`, pushing a stack-frame              |
-| `CALLS` | symbol    | Jump to symbol, pushing a stack-frame                                    |
 | `RET`   |           | Return from the current stack-frame                                      |
 
 ## Symbol table instructions
 
 These instructions operate on the symbol table.
 
-| Name        | Arguments   | Description                                                             |
-|-------------|-------------|-------------------------------------------------------------------------|
-| `SYAMOUNT`  |             | Pushes the amount of registered symbols as a 32-bit integer             |
-| `SYOFFSET`  | symbol      | Pushes the offset of a given symbol                                     |
-| `SYSIZE`    | symbol      | Pushes the size of a given symbol                                       |
-| `SYNAME`    | symbol      | Pushes the name of a given symbol                                       |
-| `SYOFFSETR` | reg         | Pushes the offset of the symbol in `reg`                                |
-| `SYSIZER`   | reg         | Pushes the size of the symbol in `reg`                                  |
-| `SYNAMER`   | reg         | Pushes the name of the symbol in `reg`                                  |
-| `SYVALID`   | reg         | Pushes `0` if `[reg]` is a valid symbol, `1` if otherwise               |
-| `SYWRITE`   | reg, offset | Read a value from `offset` and write it to the symbol offset of `[reg]` |
-| `SYVALIDS`  | reg         | Pushes `0` if the null-terminated string `[reg]` is a existing symbol   |
+| Name       | Arguments | Description                         |
+|------------|-----------|-------------------------------------|
+| `SYOFFSET` | symbol    | Pushes the offset of a given symbol |
+| `SYSIZE`   | symbol    | Pushes the size of a given symbol   |
+| `SYNAME`   | symbol    | Pushes the name of a given symbol   |
 
 ## Miscellaneous instructions
 
