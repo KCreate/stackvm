@@ -47,7 +47,6 @@ Index `0` of the offset-pointer points at the byte *after* the null-byte marking
 
 Example for a symbol table.
 
-```
 | Symbol name       | Content-length | Offset pointer |
 |-------------------|----------------|----------------|
 | `main`            | `90`           | `0x000`        |
@@ -55,7 +54,6 @@ Example for a symbol table.
 | `sub`             | `100`          | `0x0BE`        |
 | `stringconstant`  | `12`           | `0x122`        |
 | `float32constant` | `4`            | `0x302`        |
-```
 
 ## Registers
 
