@@ -57,7 +57,8 @@ to fit (higher-order bits will be truncated).
 
 The `ip` register contains a pointer, pointing to the instruction that's next to be executed.
 
-The `sp` register contains a pointer, pointing to the current top of the stack (-1 if stack is empty).
+The `sp` register contains a pointer, pointing to the address above the current top of the stack
+(e.g If the stack starts at offset `0xA0` and contains 7 bytes, the `sp` register would contain `0xA7`).
 
 The `fp` register contains a pointer, pointing to the base of the current stack-frame.
 
@@ -180,20 +181,17 @@ All comparison instructions push a 32-bit integer onto the stack.
 | `SE`    | type, type | Sign-extend a value from `type1` to `type2` |
 | `ZE`    | type, type | Zero-extend a value from `type1` to `type2` |
 
-## Stackmanipulation instructions
+## Stack instructions
 
 | Name     | Arguments    | Description                                  |
 |----------|--------------|----------------------------------------------|
 | `LOAD`   | type, offset | Load a *type* value located at `fp + offset` |
 | `LOADR`  | type, reg    | Load a *type* value located at `fp + [reg]`  |
+| `LOADI`  | type, value  | Load an immediate *type* value               |
 | `STORE`  | type, offset | Pop a *type* value and save at `fp + offset` |
 | `STORER` | type, reg    | Pop a *type* value and save at `fp + [reg]`  |
 | `INC`    | type, offset | Increment a *type* value at `fp + offset`    |
 | `DEC`    | type, offset | Decrement a *type* value at `fp + offset`    |
-| `POP`    | type         | Pop a *type* value into the `gbg` register   |
-
-> Note: When using `POP` with more than the max size of the `gbg` register,
-the value will be truncated.
 
 ## Memory read / write
 
@@ -243,10 +241,11 @@ jmp.r -10
 
 The instructions below provide some useful functions.
 
-| Name   | Description       |
-|--------|-------------------|
-| `NOP`  | Does nothing      |
-| `HALT` | Halts the machine |
+| Name   | Arguments | Description       |
+|--------|-----------|-------------------|
+| `NOP`  |           | Does nothing      |
+| `PUTS` | type      |                   |
+| `HALT` |           | Halts the machine |
 
 ## License
 
