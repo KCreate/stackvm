@@ -10,11 +10,9 @@ global constants.
 
 ## Content ordering
 
-This section describes the way a file contains bytecodes, constants and method symbols.
+This section describes the way a valid executable file has to be structured.
 
 ```
-+--------------+
-| Symbol table |
 +--------------+
 | Bytecodes    |
 +--------------+
@@ -22,38 +20,14 @@ This section describes the way a file contains bytecodes, constants and method s
 +--------------+
 ```
 
-Each file starts with a symbol table containing the offsets to all methods and constants the file contains.
-After that, the file's instructions follow. At the very end are the constants the file exports.
+Each file begins with the bytecodes of the program. The constants section directly follows the bytecode section.
+There is no border or marker between these two sections, they just directly follow each other.
 
-The following format is used to describe a single table entry. The symbol table can contain up to `65536` entries.
+At startup, the whole file is loaded into memory at address `0x0`. Execution will begin at address `0x0`.
+If the program allows execution flow to the constant section, this may cause undefined behaviour.
 
-Single table entries don't require a separator between them. After the table ends, a single null-byte (`0x00`)
-is expected. This mark tells the parser to stop parsing the symbol table.
-
-```
-+-----------------------------------+
-| Null-terminated symbol name       |
-+-----------------------------------+
-| Content length in bytes (64-bits) |
-+-----------------------------------+
-| Offset pointer (64-bits)          |
-+-----------------------------------+
-```
-
-Index `0` of the offset-pointer points at the byte *after* the null-byte marking the end of the table
-(e.g If the table takes up 30 bytes, the offset `0` would point at byte `31`).
-
-## Symbol table
-
-Example for a symbol table.
-
-| Symbol name       | Content-length | Offset pointer |
-|-------------------|----------------|----------------|
-| `main`            | `90`           | `0x000`        |
-| `add`             | `100`          | `0x05A`        |
-| `sub`             | `100`          | `0x0BE`        |
-| `stringconstant`  | `12`           | `0x122`        |
-| `float32constant` | `4`            | `0x302`        |
+It is the sole role of the compiler to generate code that behaves correctly. The machine doesn't do any section-checking
+at all.
 
 ## Registers
 
@@ -91,7 +65,7 @@ Bits 3 - 8 make up the register value.
 Instructions are represented as 16-bit values.
 
 The first three bits make up the header. It contains information about the signedness of the instruction
-and on what type it should operate on.
+and on what type it should operate on. The definitions of the header bit can change for each instruction.
 
 Each part of the header has it's own name (`S`, `T`, `B`)
 
@@ -112,10 +86,6 @@ vvv vvvvvvvvvvvvv
 |
 +- S - Signed / Unsigned
 ```
-
-## Symbols
-
-Symbols are 32-bit pointers into the module's own symbol table.
 
 ## Size specifiers
 

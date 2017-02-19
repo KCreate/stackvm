@@ -122,7 +122,6 @@ The `Arguments` section, if present, follows the following naming convention:
 - `value` Value of the same size as the instruction.
 - `reg` The name of a register prefixed with a `%` character.
 - `type` Size specifier (e.g `BYTE` or `WORD`).
-- `symbol` A symbol pointing to an entry in the modules symbol table.
 
 If a register or argument name is displayed with brackets around it (e.g `[source]` or `[r0]`)
 the value inside the register is meant.
@@ -239,16 +238,6 @@ jmp.r -10
 | `CALL`  | offset    | Relative or absolute jump to given offset, pushing a stack-frame         |
 | `CALLR` | reg       | Relative or absolute jump to `[reg]`, pushing a stack-frame              |
 | `RET`   |           | Return from the current stack-frame                                      |
-
-## Symbol table instructions
-
-These instructions operate on the symbol table.
-
-| Name       | Arguments | Description                         |
-|------------|-----------|-------------------------------------|
-| `SYOFFSET` | symbol    | Pushes the offset of a given symbol |
-| `SYSIZE`   | symbol    | Pushes the size of a given symbol   |
-| `SYNAME`   | symbol    | Pushes the name of a given symbol   |
 
 ## Miscellaneous instructions
 
