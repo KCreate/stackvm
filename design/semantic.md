@@ -22,6 +22,7 @@ and linear random-access-memory.
 | `INVALID_INSTRUCTION`   | `0x03` | Unknown instruction                                               |
 | `INVALID_REGISTER`      | `0x04` | Unknown register                                                  |
 | `INVALID_JUMP`          | `0x05` | Trying to jump to an address that's out of bounds                 |
+| `OUT_OF_MEMORY`         | `0x06` | Not enough memory (Growing heap, loading program, etc.)           |
 
 ## Registers
 
@@ -133,7 +134,6 @@ the value inside the register is meant.
 |----------|----------------|---------------------------------------------------------------------|
 | `RPUSH`  | reg            | Push the value of a register onto the stack                         |
 | `RPOP`   | reg            | Pop the top of the stack into a register                            |
-| `RLOAD`  | value          | Push a value into a register                                        |
 | `INCR`   | reg            | Increment the value inside a register by 1                          |
 | `DECR`   | reg            | Decrement the value inside a register by 1                          |
 | `MOV`    | target, source | Copies the contents of the source register into the target register |
