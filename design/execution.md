@@ -30,7 +30,7 @@ the stack starts at address `0x19`).
 ```
 +------------------------+ <- 0x0
 | Instructions           |
-+------------------------+ <- Instruction-bytes + 1
++------------------------+ <- Instruction-bytes
 | Stack-memory           |
 +------------------------+
 | Heap-memory (unmanaged)|
