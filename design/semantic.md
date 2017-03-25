@@ -16,13 +16,14 @@ and linear random-access-memory.
 
 | Name                    | Value  | Description                                                       |
 |-------------------------|--------|-------------------------------------------------------------------|
-| `STACKOVERFLOW`         | `0x00` | Operation would overflow the stack                                |
-| `STACKUNDERFLOW`        | `0x01` | Operation would underflow the stack (e.g `POP` on an empty stack) |
-| `ILLEGAL_MEMORY_ACCESS` | `0x02` | Memory read or write is out-of-bounds                             |
-| `INVALID_INSTRUCTION`   | `0x03` | Unknown instruction                                               |
-| `INVALID_REGISTER`      | `0x04` | Unknown register                                                  |
-| `INVALID_JUMP`          | `0x05` | Trying to jump to an address that's out of bounds                 |
-| `OUT_OF_MEMORY`         | `0x06` | Not enough memory (Growing heap, loading program, etc.)           |
+| `REGULAR_EXIT`          | `0x00` | Operation would overflow the stack                                |
+| `STACKOVERFLOW`         | `0x01` | Operation would overflow the stack                                |
+| `STACKUNDERFLOW`        | `0x02` | Operation would underflow the stack (e.g `POP` on an empty stack) |
+| `ILLEGAL_MEMORY_ACCESS` | `0x03` | Memory read or write is out-of-bounds                             |
+| `INVALID_INSTRUCTION`   | `0x04` | Unknown instruction                                               |
+| `INVALID_REGISTER`      | `0x05` | Unknown register                                                  |
+| `INVALID_JUMP`          | `0x06` | Trying to jump to an address that's out of bounds                 |
+| `OUT_OF_MEMORY`         | `0x07` | Not enough memory (Growing heap, loading program, etc.)           |
 
 ## Registers
 
@@ -130,13 +131,13 @@ the value inside the register is meant.
 
 ## Reading from and writing to registers
 
-| Name     | Arguments      | Description                                                         |
-|----------|----------------|---------------------------------------------------------------------|
-| `RPUSH`  | reg            | Push the value of a register onto the stack                         |
-| `RPOP`   | reg            | Pop the top of the stack into a register                            |
-| `INCR`   | reg            | Increment the value inside a register by 1                          |
-| `DECR`   | reg            | Decrement the value inside a register by 1                          |
-| `MOV`    | target, source | Copies the contents of the source register into the target register |
+| Name    | Arguments      | Description                                                         |
+|---------|----------------|---------------------------------------------------------------------|
+| `RPUSH` | reg            | Push the value of a register onto the stack                         |
+| `RPOP`  | reg            | Pop the top of the stack into a register                            |
+| `INCR`  | reg            | Increment the value inside a register by 1                          |
+| `DECR`  | reg            | Decrement the value inside a register by 1                          |
+| `MOV`   | target, source | Copies the contents of the source register into the target register |
 
 ## Arithmetic instructions
 
