@@ -63,6 +63,24 @@ module StackVM::Machine
 
       self
     end
+
+    # Fetches the instruction at the current IP
+    #
+    # Returns a Instruction struct
+    def fetch
+      address = @regs[Reg::IP]
+      bytes : Slice(UInt8)
+
+      begin
+        bytes = @memory[address, 2]
+        bytes.reverse! # flip because of endianness
+      rescue e : IndexError
+        raise Error.new Err::ILLEGAL_MEMORY_ACCESS, "Could not fetch instruction at #{address.to_s(16)}"
+      end
+
+      p1 = Pointer(UInt16).new bytes.to_unsafe.address
+      Instruction.new p1[0]
+    end
   end
 
 end

@@ -48,4 +48,20 @@ describe StackVM::Machine do
     machine.memory[0].should eq 25
   end
 
+  it "fetches an instruction" do
+    machine = StackVM::Machine::Machine.new 16
+    machine.flash Slice(UInt8).new(2).tap { |memory|
+      memory[0] = 0b10100000_u8
+      memory[1] = 0b00011100_u8
+    }
+
+    instruction = machine.fetch
+
+    instruction.should be_a StackVM::Machine::Instruction
+    instruction.flag_s.should eq true
+    instruction.flag_t.should eq false
+    instruction.flag_b.should eq true
+    instruction.opcode.should eq 0b00011100_u8
+  end
+
 end

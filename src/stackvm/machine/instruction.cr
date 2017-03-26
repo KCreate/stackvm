@@ -5,7 +5,7 @@ module StackVM::Machine
 
   # Represents a single instruction
   struct Instruction
-    property value : UInt8
+    property value : UInt16
 
     def initialize(@value)
     end
