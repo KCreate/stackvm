@@ -4,15 +4,15 @@ require "../semantic/error.cr"
 module StackVM::Machine
   include Semantic
 
-  DEFAULT_MEMORY_SIZE = 65536
+  DEFAULT_MEMORY_SIZE = 65536_u64
 
   class Machine
     property regs : Slice(UInt64)
     property memory : Slice(UInt8)
 
-    def initialize(memory_size : UInt64 = DEFAULT_MEMORY_SIZE)
-      @regs = Slice(UInt64).new(19, 0)
-      @memory = Slice(UInt8).new(memory_size, 0)
+    def initialize(memory_size = DEFAULT_MEMORY_SIZE)
+      @regs = Slice(UInt64).new(19, 0_u64)
+      @memory = Slice(UInt8).new(memory_size, 0_u8)
     end
 
     # Resets and copies *data* into the machine's memory
@@ -32,8 +32,8 @@ module StackVM::Machine
 
     # Writes 0 to all memory locations
     def reset_memory
-      0.upto @memory.bytesize do |i|
-        @memory[i] = 0
+      0.upto(@memory.bytesize - 1) do |i|
+        @memory[i] = 0_u8
       end
 
       self
@@ -48,7 +48,7 @@ module StackVM::Machine
 
       # Creates a new slice of size *size*
       # and writes the old memory into it
-      new_memory = Slice(UInt8).new(size, 0)
+      new_memory = Slice(UInt8).new(size, 0_u8)
       @memory.move_to new_memory
       @memory = new_memory
 
@@ -60,6 +60,8 @@ module StackVM::Machine
       @regs[Reg::IP] = 0
       @regs[Reg::SP] = 0
       @regs[Reg::FP] = 0
+
+      self
     end
   end
 
