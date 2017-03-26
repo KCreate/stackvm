@@ -8,6 +8,9 @@ build: prepare
 prepare:
 	mkdir -p bin
 
+test:
+	crystal spec --error-trace
+
 clean:
 	find . -name "**/.DS_Store" | xargs rm
 	find . -name "*.swp" | xargs rm
