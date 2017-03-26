@@ -48,9 +48,9 @@ module StackVM::Machine
 
       # Creates a new slice of size *size*
       # and writes the old memory into it
-      new_memory = Slice(UInt8).new(size, 0_u8)
-      @memory.move_to new_memory
-      @memory = new_memory
+      @memory = Slice(UInt8).new(size, 0_u8).tap do |new_memory|
+        @memory.move_to new_memory
+      end
 
       self
     end
