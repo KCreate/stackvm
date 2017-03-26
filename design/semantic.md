@@ -101,16 +101,18 @@ You can set these header bits by adding the corresponding suffixes to the instru
 The suffixes are separated via a dot (`.`) character from each other and from the instruction.
 They are order-insensitive and can also be duplicated (e.g `push.i32.i32` is equal to `push.i32`)
 
-| Suffix | Description                                    |
-|--------|------------------------------------------------|
-| `i`    | Sets the `S` bit to `0`                        |
-| `u`    | Sets the `S` bit to `1`                        |
-| `r`    | Sets the `T` bit to `1`                        |
-| `a`    | Sets the `T` bit to `0`                        |
-| `i32`  | Sets the `T` bit to `0` and the `B` bit to `0` |
-| `i64`  | Sets the `T` bit to `0` and the `B` bit to `1` |
-| `f32`  | Sets the `T` bit to `1` and the `B` bit to `0` |
-| `f64`  | Sets the `T` bit to `1` and the `B` bit to `1` |
+| Suffix | Description                                                        |
+|--------|--------------------------------------------------------------------|
+| `i`    | Sets the `S` bit to `0`                                            |
+| `u`    | Sets the `S` bit to `1`                                            |
+| `r`    | Sets the `T` bit to `1`                                            |
+| `a`    | Sets the `T` bit to `0`                                            |
+| `i32`  | Sets the `S` bit to `0`, the `T` bit to `0` and the `B` bit to `0` |
+| `i64`  | Sets the `S` bit to `0`, the `T` bit to `0` and the `B` bit to `1` |
+| `u32`  | Sets the `S` bit to `1`, the `T` bit to `0` and the `B` bit to `0` |
+| `u64`  | Sets the `S` bit to `1`, the `T` bit to `0` and the `B` bit to `1` |
+| `f32`  | Sets the `T` bit to `1` and the `B` bit to `0`                     |
+| `f64`  | Sets the `T` bit to `1` and the `B` bit to `1`                     |
 
 When encoding immediate values, these headers bits have no meaning and are simply ignored.
 
