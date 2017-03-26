@@ -51,8 +51,8 @@ describe StackVM::Machine do
   it "fetches an instruction" do
     machine = StackVM::Machine::Machine.new 16
     machine.flash Slice(UInt8).new(2).tap { |memory|
-      memory[0] = 0b10100000_u8
-      memory[1] = 0b00011100_u8
+      memory[0] = 0b00011100_u8
+      memory[1] = 0b10100000_u8
     }
 
     instruction = machine.fetch
@@ -69,18 +69,18 @@ describe StackVM::Machine do
     machine.flash Slice(UInt8).new(8).tap { |memory|
 
       # LOADI
-      memory[0] = 0b00000000_u8
-      memory[1] = 0b00011100_u8
+      memory[0] = 0b00011100_u8
+      memory[1] = 0b00000000_u8
 
       # WORD
-      memory[2] = 0b00000000_u8
+      memory[2] = 0b00000010_u8
       memory[3] = 0b00000000_u8
       memory[4] = 0b00000000_u8
-      memory[5] = 0b00000010_u8
+      memory[5] = 0b00000000_u8
 
       # 25
-      memory[6] = 0b00000000_u8
-      memory[7] = 0b00011001_u8
+      memory[6] = 0b00011001_u8
+      memory[7] = 0b00000000_u8
     }
 
     instruction = machine.fetch
