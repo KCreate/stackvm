@@ -89,4 +89,5 @@ vvv vvvvvvvvvvvvv
 
 ## Size specifiers
 
-Size specifiers are represented as 64-bit values and can be used to denote a given amount of bytes in an argument.
+Size specifiers are represented as 32-bit values and are used to denote a given amount of bytes
+in an argument.
