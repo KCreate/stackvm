@@ -4,15 +4,19 @@ require "../semantic/error.cr"
 module StackVM::Machine
   include Semantic
 
-  DEFAULT_MEMORY_SIZE = 65536_u64
+  DEFAULT_MEMORY_SIZE = 65536
 
   class Machine
     property regs : Slice(UInt64)
     property memory : Slice(UInt8)
+    property instruction : Instruction
+    property executable_size : UInt64
 
     def initialize(memory_size = DEFAULT_MEMORY_SIZE)
       @regs = Slice(UInt64).new(19, 0_u64)
       @memory = Slice(UInt8).new(memory_size, 0_u8)
+      @instruction = Instruction.new 0b00000000_00110000_u16
+      @executable_size = 0_u64
     end
 
     # Resets and copies *data* into the machine's memory
@@ -26,6 +30,8 @@ module StackVM::Machine
 
       reset_memory
       data.copy_to @memory
+
+      @executable_size = data.bytesize.to_u64
 
       self
     end
@@ -57,11 +63,43 @@ module StackVM::Machine
 
     # Starts the execution of the machine
     def start
-      @regs[Reg::IP] = 0
-      @regs[Reg::SP] = 0
-      @regs[Reg::FP] = 0
+      @regs[Reg::IP] = 0_u64
+      @regs[Reg::SP] = @executable_size
+      @regs[Reg::FP] = @executable_size
+
+      while @instruction.opcode != OP::HALT
+        cycle
+      end
 
       self
+    end
+
+    # Runs a single CPU cycle
+    #
+    # Fetches a new instruction, executes it and unless the instruction changed the IP,
+    # sets the IP to the address of the next instruction in memory
+    def cycle
+      @instruction = fetch
+      did_jump = execute
+
+      unless did_jump
+        instruction_length = decode_instruction_length @instruction
+        @regs[Reg::IP] += instruction_length
+      end
+    end
+
+    # Executes the current instruction
+    #
+    # Returns true if the instruction changed the IP
+    def execute
+      case @instruction.opcode
+      when OP::LOADI
+        return op_loadi
+      when OP::HALT
+        return false
+      else
+        raise Error.new Err::INVALID_INSTRUCTION, "#{@instruction.opcode.to_s(16)} is not a valid instruction"
+      end
     end
 
     # Fetches the instruction at the current IP
@@ -73,7 +111,6 @@ module StackVM::Machine
 
       begin
         bytes = @memory[address, 2]
-        bytes.reverse! # flip because of endianness
       rescue e : IndexError
         raise Error.new Err::ILLEGAL_MEMORY_ACCESS, "Could not fetch instruction at #{address.to_s(16)}"
       end
@@ -120,7 +157,6 @@ module StackVM::Machine
 
         begin
           type = @memory[address, 4]
-          type.reverse! # flip because of endianness
         rescue e : IndexError
           raise Error.new Err::ILLEGAL_MEMORY_ACCESS, "Could not fetch type argument at #{address.to_s(16)}"
         end
@@ -132,6 +168,71 @@ module StackVM::Machine
       else
         raise Error.new Err::INVALID_INSTRUCTION, "#{instruction.opcode.to_s(16)} is not a valid instruction"
       end
+    end
+
+    # Outputs human-readable debug information to *output*
+    def status(output : IO)
+      output.puts "Memory-size: #{@memory.size}"
+      output.puts "Executable-size: #{@executable_size}"
+      output.puts ""
+      output.puts "Registers:"
+      output.puts "
+        r0: 0x#{@regs[Reg::R0].to_s(16)}    r8:  0x#{@regs[Reg::R8].to_s(16)}
+        r1: 0x#{@regs[Reg::R1].to_s(16)}    r9:  0x#{@regs[Reg::R9].to_s(16)}
+        r2: 0x#{@regs[Reg::R2].to_s(16)}    r10: 0x#{@regs[Reg::R10].to_s(16)}
+        r3: 0x#{@regs[Reg::R3].to_s(16)}    r11: 0x#{@regs[Reg::R11].to_s(16)}
+        r4: 0x#{@regs[Reg::R4].to_s(16)}    r12: 0x#{@regs[Reg::R12].to_s(16)}
+        r5: 0x#{@regs[Reg::R5].to_s(16)}    r13: 0x#{@regs[Reg::R13].to_s(16)}
+        r6: 0x#{@regs[Reg::R6].to_s(16)}    r14: 0x#{@regs[Reg::R14].to_s(16)}
+        r7: 0x#{@regs[Reg::R7].to_s(16)}    r15: 0x#{@regs[Reg::R15].to_s(16)}
+
+        ip: 0x#{@regs[Reg::IP].to_s(16)}    sp:  0x#{@regs[Reg::SP].to_s(16)}
+        fp: 0x#{@regs[Reg::FP].to_s(16)}
+      "
+      output.puts ""
+      output.puts "Memory:"
+
+      stack_memory = read_memory(@executable_size, @regs[Reg::SP] - @executable_size)
+      output.puts stack_memory.hexdump
+    end
+
+    # Reads *amount* of bytes starting at *address*
+    def read_memory(address, amount)
+      begin
+        return @memory[address, amount]
+      rescue e : IndexError
+        raise Error.new Err::ILLEGAL_MEMORY_ACCESS, "Could not read #{amount} bytes at #{address}"
+      end
+    end
+
+    # Writes *value* to *address*
+    def write_memory(address, value : Slice(UInt8))
+      begin
+        target = @memory + address
+        value.copy_to target
+      rescue e : IndexError
+        raise Error.new Err::ILLEGAL_MEMORY_ACCESS, "Could not write #{value.size} bytes to #{address}"
+      end
+    end
+
+    # Executes a LOADI instruction
+    def op_loadi
+
+      # Decodes the amount of bytes that are being pushed
+      type = read_memory(@regs[Reg::IP] + 2, 2)
+      type = Pointer(UInt32).new type.to_unsafe.address
+      amount_of_bytes = type[0]
+
+      # Reads *type* bytes
+      value = read_memory(@regs[Reg::IP] + 6, amount_of_bytes)
+
+      # Writes those values onto the stack
+      write_memory @regs[Reg::SP], value
+
+      # Increments the stack pointer
+      @regs[Reg::SP] += amount_of_bytes
+
+      return false
     end
   end
 
