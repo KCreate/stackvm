@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/KCreate/stackvm.svg?branch=master)](https://travis-ci.org/KCreate/stackvm)
+
 # Virtual Machine
 
 This is my try at writing a virtual machine from scratch. The project is currently in the design and planning phase,
