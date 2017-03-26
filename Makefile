@@ -1,9 +1,16 @@
-FILE = "repl"
-debug: build
+FILE = "spec/data/debug.bc"
+
+run: build_release
 	./bin/stackvm $(FILE)
 
-build: prepare
+debug: build_debug
+	./bin/stackvm $(FILE)
+
+build_release: prepare
 	crystal build src/stackvm.cr --release -o bin/stackvm
+
+build_debug: prepare
+	crystal build src/stackvm.cr -o bin/stackvm
 
 prepare:
 	mkdir -p bin
