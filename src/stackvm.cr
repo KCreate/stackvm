@@ -11,7 +11,8 @@ module StackVM
 
   # Compile the above program to bytes
   binary = Assembler::Utils.convert_opcodes EXE{
-    LOADI, 11_u32, "hello world",
+    LOADI, QWORD, 25_i64,
+    RPOP, R0,
     HALT
   }
 

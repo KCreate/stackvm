@@ -119,6 +119,20 @@ describe StackVM::Machine do
       sp.should eq 27
     end
 
+    it "runs RPOP" do
+      machine = Machine.new 32
+      machine.flash Assembler::Utils.convert_opcodes EXE{
+        LOADI, QWORD, 25_i64,
+        RPOP, R0,
+        HALT
+      }
+
+      machine.start
+
+      r0 = machine.regs[R0]
+      r0.should eq 25
+    end
+
   end
 
 end
