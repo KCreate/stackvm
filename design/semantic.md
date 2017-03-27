@@ -33,6 +33,7 @@ and linear random-access-memory.
 | `ip`           | Instruction pointer |
 | `sp`           | Stack pointer       |
 | `fp`           | Frame pointer       |
+| `ext`          | Exit code           |
 
 Each register can hold a 64-bit value.
 

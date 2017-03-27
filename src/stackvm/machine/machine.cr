@@ -13,7 +13,7 @@ module StackVM::Machine
     property executable_size : UInt64
 
     def initialize(memory_size = DEFAULT_MEMORY_SIZE)
-      @regs = Slice(UInt64).new(19, 0_u64)
+      @regs = Slice(UInt64).new(20, 0_u64)
       @memory = Slice(UInt8).new(memory_size, 0_u8)
       @instruction = Instruction.new 0b00000000_00110000_u16
       @executable_size = 0_u64

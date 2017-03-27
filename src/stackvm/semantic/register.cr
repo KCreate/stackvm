@@ -25,6 +25,7 @@ module StackVM::Semantic
     IP  = 0x10_u8 # Instruction pointer
     SP  = 0x11_u8 # Stack pointer
     FP  = 0x12_u8 # Frame pointer
+    EXT = 0x13_u8 # Exit code
 
     # Bitmasks
     M_C = 0b10000000_u8 # Complete or sub-portion
