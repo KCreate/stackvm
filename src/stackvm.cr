@@ -8,13 +8,13 @@ module StackVM
   include Machine
   include Utils
 
-  debug_program = Array(UInt8 | UInt16 | UInt32 | UInt64){
-    LOADI, QWORD, 0xff_u64,
-    LOADI, QWORD, 0xff_u64,
-    RPOP, R0,
-    RPOP, R1,
-    RPUSH, R0,
-    RPUSH, R1,
+  debug_program = Array(UInt8 | UInt16 | UInt32 | UInt64 | Float32 | Float64){
+    LOADI, DWORD, 1_f32,
+    LOADI, DWORD, 0.5_f32,
+    LOADI, DWORD, 0.25_f32,
+    LOADI, DWORD, 0.25_f32,
+    ADD | M_T,
+    ADD | M_T,
     HALT
   }
 

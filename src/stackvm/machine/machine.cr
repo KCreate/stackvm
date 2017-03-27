@@ -96,6 +96,18 @@ module StackVM::Machine
         return op_rpush
       when OP::RPOP
         return op_rpop
+      when OP::ADD
+        return op_add
+      when OP::SUB
+        return op_sub
+      when OP::MUL
+        return op_mul
+      when OP::DIV
+        return op_div
+      when OP::REM
+        return op_rem
+      when OP::EXP
+        return op_exp
       when OP::LOADI
         return op_loadi
       when OP::HALT
@@ -199,6 +211,18 @@ module StackVM::Machine
       self
     end
 
+    # Yields a slice to write a value to
+    def memory_write(address)
+      begin
+        target = @memory + address
+        yield target
+      rescue e : IndexError
+        raise Error.new Err::ILLEGAL_MEMORY_ACCESS, "Could not write to #{address}"
+      end
+
+      self
+    end
+
     # Pops *amount* of bytes from the stack
     def stack_pop(amount)
       value = memory_read @regs[Reg::SP] - amount, amount
@@ -210,6 +234,16 @@ module StackVM::Machine
     def stack_push(value : Slice(UInt8))
       memory_write @regs[Reg::SP], value
       @regs[Reg::SP] += value.size
+      self
+    end
+
+    # Yields a slice to write a value to
+    def stack_push
+      memory_write @regs[Reg::SP] do |target|
+        bytes_written = yield target
+        @regs[Reg::SP] += bytes_written
+      end
+
       self
     end
 
@@ -307,6 +341,128 @@ module StackVM::Machine
 
       return false
     end
+
+    # Generates arithmetic instructions
+    private macro implement_operator(name, operator)
+      def op_{{name}}
+        operand_length = @instruction.flag_b ? 8 : 4
+        unsigned = @instruction.flag_s
+        fpop = @instruction.flag_t
+
+        # Pop the necessary bytes off the stack
+        op2 = stack_pop operand_length
+        op1 = stack_pop operand_length
+
+        # Branch for different types
+        if fpop
+          if operand_length == 8
+            op1 = IO::ByteFormat::LittleEndian.decode(Float64, op1)
+            op2 = IO::ByteFormat::LittleEndian.decode(Float64, op2)
+          else
+            op1 = IO::ByteFormat::LittleEndian.decode(Float32, op1)
+            op2 = IO::ByteFormat::LittleEndian.decode(Float32, op2)
+          end
+
+          # Write the result of the calculation onto the stack
+          stack_push do |target|
+
+            # Check for stack overflow
+            if target.size < operand_length
+              raise Error.new Err::STACKOVERFLOW, "Stack overflow"
+            end
+
+            IO::ByteFormat::LittleEndian.encode(op1 {{operator.id}} op2, target)
+            next operand_length
+          end
+        else
+          if operand_length == 8
+            if unsigned
+              op1 = IO::ByteFormat::LittleEndian.decode(UInt64, op1)
+              op2 = IO::ByteFormat::LittleEndian.decode(UInt64, op2)
+            else
+              op1 = IO::ByteFormat::LittleEndian.decode(Int64, op1)
+              op2 = IO::ByteFormat::LittleEndian.decode(Int64, op2)
+            end
+          else
+            if unsigned
+              op1 = IO::ByteFormat::LittleEndian.decode(UInt32, op1)
+              op2 = IO::ByteFormat::LittleEndian.decode(UInt32, op2)
+            else
+              op1 = IO::ByteFormat::LittleEndian.decode(Int32, op1)
+              op2 = IO::ByteFormat::LittleEndian.decode(Int32, op2)
+            end
+          end
+
+          # Write the result of the calculation onto the stack
+          stack_push do |target|
+
+            # Check for stack overflow
+            if target.size < operand_length
+              raise Error.new Err::STACKOVERFLOW, "Stack overflow"
+            end
+
+            IO::ByteFormat::LittleEndian.encode(op1 {{operator.id}} op2, target)
+            next operand_length
+          end
+        end
+
+        return false
+      end
+    end
+
+    # Executes a ADD instruction
+    #
+    # ```
+    # LOADI DWORD 25
+    # LOADI DWORD 25
+    # ADD # => 50
+    # ```
+    implement_operator add, :+
+
+    # Executes a SUB instruction
+    #
+    # ```
+    # LOADI DWORD 50
+    # LOADI DWORD 25
+    # SUB # => 25
+    # ```
+    implement_operator sub, :-
+
+    # Executes a MUL instruction
+    #
+    # ```
+    # LOADI DWORD 25
+    # LOADI DWORD 4
+    # MUL # => 100
+    # ```
+    implement_operator mul, :*
+
+    # Executes a DIV instruction
+    #
+    # ```
+    # LOADI DWORD 25
+    # LOADI DWORD 5
+    # DIV # => 5
+    # ```
+    implement_operator div, :/
+
+    # Executes a REM instruction
+    #
+    # ```
+    # LOADI DWORD 25
+    # LOADI DWORD 20
+    # REM # => 5
+    # ```
+    implement_operator rem, :%
+
+    # Executes a EXP instruction
+    #
+    # ```
+    # LOADI DWORD 2
+    # LOADI DWORD 4
+    # EXP # => 16
+    # ```
+    implement_operator exp, :**
 
     # Executes a LOADI instruction
     #
