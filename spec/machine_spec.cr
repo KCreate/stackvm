@@ -133,6 +133,62 @@ describe StackVM::Machine do
       r0.should eq 25
     end
 
+    it "runs ADD" do
+      machine = Machine.new 256
+      machine.flash Assembler::Utils.convert_opcodes EXE{
+
+        # 64 bit signed int
+        LOADI, QWORD, 25_u64,
+        LOADI, QWORD, 25_u64,
+        ADD | M_B,
+
+        # 32 bit signed int
+        LOADI, DWORD, 25_u32,
+        LOADI, DWORD, 25_u32,
+        ADD,
+
+        # 64 bit unsigned int
+        LOADI, QWORD, 25_u64,
+        LOADI, QWORD, 25_u64,
+        ADD | M_B | M_S,
+
+        # 32 bit unsigned int
+        LOADI, DWORD, -1.to_u32,
+        LOADI, DWORD, 25_u32,
+        ADD | M_S,
+
+        # 64 bit float
+        LOADI, QWORD, 25_f64,
+        LOADI, QWORD, 25_f64,
+        ADD | M_B | M_T,
+
+        # 32 bit float
+        LOADI, DWORD, 25_f32,
+        LOADI, DWORD, 25_f32,
+        ADD | M_T,
+
+        HALT
+      }
+
+      machine.cycle 3
+      machine.stack_read_value(Int64).should eq 50
+
+      machine.cycle 3
+      machine.stack_read_value(Int32).should eq 50
+
+      machine.cycle 3
+      machine.stack_read_value(Int64).should eq 50
+
+      machine.cycle 3
+      machine.stack_read_value(Int32).should eq 24
+
+      machine.cycle 3
+      machine.stack_read_value(Float64).should eq 50
+
+      machine.cycle 3
+      machine.stack_read_value(Float32).should eq 50
+    end
+
   end
 
 end

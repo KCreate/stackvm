@@ -85,6 +85,19 @@ module StackVM::Machine
         instruction_length = decode_instruction_length @instruction
         @regs[Reg::IP] += instruction_length
       end
+
+      self
+    end
+
+    # Runs *amount* CPU cycles
+    #
+    # Same as calling cycle *amount* times
+    def cycle(amount)
+      amount.times do
+        cycle
+      end
+
+      self
     end
 
     # Executes the current instruction
@@ -193,10 +206,23 @@ module StackVM::Machine
       end
     end
 
+    # Yields a slice starting at *address*
+    def memory_read(address)
+      begin
+        target = @memory + address
+        yield target
+      rescue e : IndexError
+        raise Error.new Err::ILLEGAL_MEMORY_ACCESS, "Could not read at #{address}"
+      end
+
+      self
+    end
+
     # Reads a *type* value from *address*
     def memory_read_value(address, type : Number.class)
-      bytes = memory_read address, amount
-      IO::ByteFormat::LittleEndian.decode type, bytes
+      memory_read address do |source|
+        return IO::ByteFormat::LittleEndian.decode type, source
+      end
     end
 
     # Writes *value* to *address*
@@ -228,6 +254,11 @@ module StackVM::Machine
       value = memory_read @regs[Reg::SP] - amount, amount
       @regs[Reg::SP] -= amount
       value
+    end
+
+    # Pops a *type* value from the stack
+    def stack_read_value(type : Number.class)
+      memory_read_value @regs[Reg::SP] - sizeof(typeof(type)), type
     end
 
     # Writes *value* onto the stack
