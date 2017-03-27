@@ -96,7 +96,7 @@ module StackVM::Machine
       when OP::LOADI
         return op_loadi
       when OP::HALT
-        return false
+        return op_halt
       else
         raise Error.new Err::INVALID_INSTRUCTION, "#{@instruction.opcode.to_s(16)} is not a valid instruction"
       end
@@ -174,23 +174,21 @@ module StackVM::Machine
     def status(output : IO)
       output.puts "Memory-size: #{@memory.size}"
       output.puts "Executable-size: #{@executable_size}"
-      output.puts ""
       output.puts "Registers:"
       output.puts "
-        r0: 0x#{@regs[Reg::R0].to_s(16)}    r8:  0x#{@regs[Reg::R8].to_s(16)}
-        r1: 0x#{@regs[Reg::R1].to_s(16)}    r9:  0x#{@regs[Reg::R9].to_s(16)}
-        r2: 0x#{@regs[Reg::R2].to_s(16)}    r10: 0x#{@regs[Reg::R10].to_s(16)}
-        r3: 0x#{@regs[Reg::R3].to_s(16)}    r11: 0x#{@regs[Reg::R11].to_s(16)}
-        r4: 0x#{@regs[Reg::R4].to_s(16)}    r12: 0x#{@regs[Reg::R12].to_s(16)}
-        r5: 0x#{@regs[Reg::R5].to_s(16)}    r13: 0x#{@regs[Reg::R13].to_s(16)}
-        r6: 0x#{@regs[Reg::R6].to_s(16)}    r14: 0x#{@regs[Reg::R14].to_s(16)}
-        r7: 0x#{@regs[Reg::R7].to_s(16)}    r15: 0x#{@regs[Reg::R15].to_s(16)}
+  r0: 0x#{@regs[Reg::R0].to_s(16).rjust(16, '0')}    r8:  0x#{@regs[Reg::R8].to_s(16).rjust(16, '0')}
+  r1: 0x#{@regs[Reg::R1].to_s(16).rjust(16, '0')}    r9:  0x#{@regs[Reg::R9].to_s(16).rjust(16, '0')}
+  r2: 0x#{@regs[Reg::R2].to_s(16).rjust(16, '0')}    r10: 0x#{@regs[Reg::R10].to_s(16).rjust(16, '0')}
+  r3: 0x#{@regs[Reg::R3].to_s(16).rjust(16, '0')}    r11: 0x#{@regs[Reg::R11].to_s(16).rjust(16, '0')}
+  r4: 0x#{@regs[Reg::R4].to_s(16).rjust(16, '0')}    r12: 0x#{@regs[Reg::R12].to_s(16).rjust(16, '0')}
+  r5: 0x#{@regs[Reg::R5].to_s(16).rjust(16, '0')}    r13: 0x#{@regs[Reg::R13].to_s(16).rjust(16, '0')}
+  r6: 0x#{@regs[Reg::R6].to_s(16).rjust(16, '0')}    r14: 0x#{@regs[Reg::R14].to_s(16).rjust(16, '0')}
+  r7: 0x#{@regs[Reg::R7].to_s(16).rjust(16, '0')}    r15: 0x#{@regs[Reg::R15].to_s(16).rjust(16, '0')}
 
-        ip: 0x#{@regs[Reg::IP].to_s(16)}    sp:  0x#{@regs[Reg::SP].to_s(16)}
-        fp: 0x#{@regs[Reg::FP].to_s(16)}
+  ip: 0x#{@regs[Reg::IP].to_s(16).rjust(16, '0')}    sp:  0x#{@regs[Reg::SP].to_s(16).rjust(16, '0')}
+  fp: 0x#{@regs[Reg::FP].to_s(16).rjust(16, '0')}
       "
-      output.puts ""
-      output.puts "Memory:"
+      output.puts "Stack: #{@regs[Reg::SP] - @executable_size} bytes"
 
       stack_memory = read_memory(@executable_size, @regs[Reg::SP] - @executable_size)
       output.puts stack_memory.hexdump
@@ -215,7 +213,25 @@ module StackVM::Machine
       end
     end
 
+    # Pops *amount* of bytes from the stack
+    def stack_pop(amount)
+      value = read_memory @regs[Reg::SP] - amount, amount
+      @regs[Reg::SP] -= amount
+      value
+    end
+
+    # Writes *value* onto the stack
+    def stack_push(value : Slice(UInt8))
+      write_memory @regs[Reg::SP], value
+      @regs[Reg::SP] += value.size
+    end
+
     # Executes a LOADI instruction
+    #
+    # ```
+    # LOADI WORD 25 # => 8 bytes
+    # LOADI QWORD 30 # => 14
+    # ```
     def op_loadi
 
       # Decodes the amount of bytes that are being pushed
@@ -225,13 +241,17 @@ module StackVM::Machine
 
       # Reads *type* bytes
       value = read_memory(@regs[Reg::IP] + 6, amount_of_bytes)
+      stack_push value
 
-      # Writes those values onto the stack
-      write_memory @regs[Reg::SP], value
+      return false
+    end
 
-      # Increments the stack pointer
-      @regs[Reg::SP] += amount_of_bytes
-
+    # Executes a HALT instruction
+    #
+    # ```
+    # HALT
+    # ```
+    def op_halt
       return false
     end
   end
