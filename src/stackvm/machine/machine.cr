@@ -93,6 +93,8 @@ module StackVM::Machine
     # Returns true if the instruction changed the IP
     def execute
       case @instruction.opcode
+      when OP::RPUSH
+        return op_rpush
       when OP::LOADI
         return op_loadi
       when OP::HALT
@@ -224,6 +226,48 @@ module StackVM::Machine
     def stack_push(value : Slice(UInt8))
       write_memory @regs[Reg::SP], value
       @regs[Reg::SP] += value.size
+    end
+
+    # Reads the contents of *reg*
+    def reg_read(reg : Register)
+
+      # Check for invalid register
+      if reg.regcode < 0 && reg.regcode > 20
+        raise Error.new Err::INVALID_REGISTER, "#{reg.regcode.to_s(16)} is not a valid register"
+      end
+
+      # Complete or sub portion
+      unless reg.subportion
+        bytes = @regs + reg.regcode
+        bytes = Slice(UInt8).new(Pointer(UInt8).new(bytes.to_unsafe.address), 8)
+        return bytes
+      else
+        unless reg.higher
+          bytes = @regs + reg.regcode
+          bytes = Slice(UInt8).new(Pointer(UInt8).new(bytes.to_unsafe.address), 4)
+          return bytes
+        else
+          bytes = @regs + reg.regcode
+          bytes = Slice(UInt8).new(Pointer(UInt8).new(bytes.to_unsafe.address + 4), 4)
+          return bytes
+        end
+      end
+    end
+
+    # Writes *value* to *reg*
+    def reg_write(reg : Register, value : Slice(UInt8))
+    end
+
+    # Executes a RPUSH instruction
+    #
+    # ```
+    #
+    # ```
+    def op_rpush
+      reg = read_memory(@regs[Reg::IP] + 2, 1)
+      reg = Register.new reg[0]
+      stack_push reg_read reg
+      return false
     end
 
     # Executes a LOADI instruction
