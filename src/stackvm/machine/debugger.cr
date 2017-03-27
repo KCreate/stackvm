@@ -31,6 +31,8 @@ module StackVM::Machine::Utils
           break
         when "m", "machine"
           machine_info
+        when "e", "executable_dump"
+          executable_dump
         when "r", "register"
           register_info
         when "s", "stack"
@@ -52,13 +54,14 @@ module StackVM::Machine::Utils
 
         Available commands:
 
-        h, help             : Show this help page
-        q, quit             : Quit
-        m, machine          : Show machine state
-        r, register         : Show register state
-        s, stack            : Show stack state
-        c, cycle            : Run a single CPU cycle
-        i, instruction      : Show info about the current instruction
+        h, help                 : Show this help page
+        q, quit                 : Quit
+        m, machine              : Show machine state
+        e, executable_dump      : Dump the content of the executable
+        r, register             : Show register state
+        s, stack                : Show stack state
+        c, cycle                : Run a single CPU cycle
+        i, instruction          : Show info about the current instruction
       HELP
     end
 
@@ -82,6 +85,12 @@ module StackVM::Machine::Utils
       @output.puts <<-DESC
         #{Meta::Descriptions[instruction.opcode]}
       DESC
+    end
+
+    # Dump the contents of the executable
+    private def executable_dump
+      executable = @machine.memory_read 0, @machine.executable_size
+      @output.puts executable.hexdump
     end
 
     # Prints information about the machine
