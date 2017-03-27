@@ -2,11 +2,17 @@ module Assembler::Utils
   extend self
 
   # Encodable values
-  alias InstructionLiterals = Array(UInt8 | UInt16 | UInt32 | UInt64 | Float32 | Float64 | String)
-  alias EXE = InstructionLiterals
+  alias InstructionLiterals = (
+    UInt8 | Int8 |
+    UInt16 | Int16 |
+    UInt32 | Int32 |
+    UInt64 | Int64 |
+    Float32 | Float64 |
+    Bool | String)
+  alias EXE = Array(InstructionLiterals)
 
-  # Converts an array of 8 - 64 bit numbers to a UInt8 slice
-  def convert_opcodes(data : InstructionLiterals)
+  # Encodes Crystal primitive values
+  def convert_opcodes(data : EXE)
     bc = 0 # byte offset counter
     binary = Slice(UInt8).new data.size * 8
 
@@ -68,6 +74,9 @@ module Assembler::Utils
         end
 
         bc += bytes.size
+      when .is_a? Bool
+        binary[bc] = num ? 1_u8 : 0_u8
+        bc += 1
       end
     end
 

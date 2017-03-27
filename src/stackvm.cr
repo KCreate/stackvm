@@ -7,14 +7,13 @@ module StackVM
   include Semantic::Reg
   include Machine
   include Utils
+  include Assembler::Utils
 
-  debug_program = Assembler::Utils::InstructionLiterals{
+  # Compile the above program to bytes
+  binary = Assembler::Utils.convert_opcodes EXE{
     LOADI, 11_u32, "hello world",
     HALT
   }
-
-  # Compile the above program to bytes
-  binary = Assembler::Utils.convert_opcodes debug_program
 
   # Create and flash the virtual machine
   machine = Machine::Machine.new
