@@ -8,13 +8,8 @@ module StackVM
   include Machine
   include Utils
 
-  debug_program = Array(UInt8 | UInt16 | UInt32 | UInt64 | Float32 | Float64){
-    LOADI, DWORD, 1_f32,
-    LOADI, DWORD, 0.5_f32,
-    LOADI, DWORD, 0.25_f32,
-    LOADI, DWORD, 0.25_f32,
-    ADD | M_T,
-    ADD | M_T,
+  debug_program = Assembler::Utils::InstructionLiterals{
+    LOADI, 11_u32, "hello world",
     HALT
   }
 

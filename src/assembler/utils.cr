@@ -1,8 +1,11 @@
 module Assembler::Utils
   extend self
 
+  # Encodable values
+  alias InstructionLiterals = Array(UInt8 | UInt16 | UInt32 | UInt64 | Float32 | Float64 | String)
+
   # Converts an array of 8 - 64 bit numbers to a UInt8 slice
-  def convert_opcodes(data : Array(UInt8 | UInt16 | UInt32 | UInt64 | Float32 | Float64))
+  def convert_opcodes(data : InstructionLiterals)
     bc = 0 # byte offset counter
     binary = Slice(UInt8).new data.size * 8
 
@@ -56,6 +59,15 @@ module Assembler::Utils
         end
 
         bc += 8
+      when .is_a? String
+        bytes = num.to_slice
+        puts "compiling #{bytes.size} bytes for string #{num}"
+
+        0.upto bytes.size - 1 do |i|
+          binary[bc + i] = bytes[i]
+        end
+
+        bc += bytes.size
       end
     end
 
