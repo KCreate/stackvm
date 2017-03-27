@@ -95,6 +95,8 @@ module StackVM::Machine
       case @instruction.opcode
       when OP::RPUSH
         return op_rpush
+      when OP::RPOP
+        return op_rpop
       when OP::LOADI
         return op_loadi
       when OP::HALT
@@ -117,8 +119,8 @@ module StackVM::Machine
         raise Error.new Err::ILLEGAL_MEMORY_ACCESS, "Could not fetch instruction at #{address.to_s(16)}"
       end
 
-      p1 = Pointer(UInt16).new bytes.to_unsafe.address
-      Instruction.new p1[0]
+      opcode = IO::ByteFormat::LittleEndian.decode UInt16, bytes
+      Instruction.new opcode
     end
 
     # Returns the amount of bytes the current instruction takes up
@@ -158,13 +160,12 @@ module StackVM::Machine
         type : Slice(UInt8)
 
         begin
-          type = @memory[address, 4]
+          type = memory_read address, 4
         rescue e : IndexError
           raise Error.new Err::ILLEGAL_MEMORY_ACCESS, "Could not fetch type argument at #{address.to_s(16)}"
         end
 
-        p1 = Pointer(UInt32).new type.to_unsafe.address
-        value_bytes = p1[0]
+        value_bytes = IO::ByteFormat::LittleEndian.decode UInt32, type
 
         return 2 + 4 + value_bytes # instruction + argument + value
       else
@@ -192,12 +193,12 @@ module StackVM::Machine
       "
       output.puts "Stack: #{@regs[Reg::SP] - @executable_size} bytes"
 
-      stack_memory = read_memory(@executable_size, @regs[Reg::SP] - @executable_size)
+      stack_memory = memory_read(@executable_size, @regs[Reg::SP] - @executable_size)
       output.puts stack_memory.hexdump
     end
 
     # Reads *amount* of bytes starting at *address*
-    def read_memory(address, amount)
+    def memory_read(address, amount)
       begin
         return @memory[address, amount]
       rescue e : IndexError
@@ -205,34 +206,43 @@ module StackVM::Machine
       end
     end
 
+    # Reads a *type* value from *address*
+    def memory_read_value(address, type : Number.class)
+      bytes = memory_read address, amount
+      IO::ByteFormat::LittleEndian.decode type, bytes
+    end
+
     # Writes *value* to *address*
-    def write_memory(address, value : Slice(UInt8))
+    def memory_write(address, value : Slice(UInt8))
       begin
         target = @memory + address
         value.copy_to target
       rescue e : IndexError
         raise Error.new Err::ILLEGAL_MEMORY_ACCESS, "Could not write #{value.size} bytes to #{address}"
       end
+
+      self
     end
 
     # Pops *amount* of bytes from the stack
     def stack_pop(amount)
-      value = read_memory @regs[Reg::SP] - amount, amount
+      value = memory_read @regs[Reg::SP] - amount, amount
       @regs[Reg::SP] -= amount
       value
     end
 
     # Writes *value* onto the stack
     def stack_push(value : Slice(UInt8))
-      write_memory @regs[Reg::SP], value
+      memory_write @regs[Reg::SP], value
       @regs[Reg::SP] += value.size
+      self
     end
 
     # Reads the contents of *reg*
     def reg_read(reg : Register)
 
       # Check for invalid register
-      if reg.regcode < 0 && reg.regcode > 20
+      if reg.regcode < 0 || reg.regcode > 20
         raise Error.new Err::INVALID_REGISTER, "#{reg.regcode.to_s(16)} is not a valid register"
       end
 
@@ -256,17 +266,70 @@ module StackVM::Machine
 
     # Writes *value* to *reg*
     def reg_write(reg : Register, value : Slice(UInt8))
+
+      # Check for invalid register
+      if reg.regcode < 0 || reg.regcode > 20
+        raise Error.new Err::INVALID_INSTRUCTION, "#{reg.regcode.to_s(16)} is not a valid register"
+      end
+
+      target : Slice(UInt8)
+
+      # Complete or sub portion
+      unless reg.subportion
+        bytes = @regs + reg.regcode
+        target = Slice(UInt8).new(Pointer(UInt8).new(bytes.to_unsafe.address), 8)
+      else
+        unless reg.higher
+          bytes = @regs + reg.regcode
+          target = Slice(UInt8).new(Pointer(UInt8).new(bytes.to_unsafe.address), 4)
+        else
+          bytes = @regs + reg.regcode
+          target = Slice(UInt8).new(Pointer(UInt8).new(bytes.to_unsafe.address + 4), 4)
+        end
+      end
+
+      # Overwrite the old data in the register with zeros
+      unless reg.subportion
+        Slice[0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8].copy_to target
+      else
+        Slice[0_u8, 0_u8, 0_u8, 0_u8].copy_to target
+      end
+
+      value.copy_to target
+
+      self
     end
 
     # Executes a RPUSH instruction
     #
     # ```
-    #
+    # LOADI QWORD 25
+    # RPOP %r0
+    # RPUSH %r0 # => 25
     # ```
     def op_rpush
-      reg = read_memory(@regs[Reg::IP] + 2, 1)
+      reg = memory_read(@regs[Reg::IP] + 2, 1)
       reg = Register.new reg[0]
       stack_push reg_read reg
+      return false
+    end
+
+    # Executes a RPOP instruction
+    #
+    # ```
+    # LOADI QWORD 25
+    # RPOP %r0 # pops 25 into r0
+    # ```
+    def op_rpop
+      reg = memory_read(@regs[Reg::IP] + 2, 1)
+      reg = Register.new reg[0]
+
+      if reg.subportion
+        reg_write reg, stack_pop 4
+      else
+        reg_write reg, stack_pop 8
+      end
+
       return false
     end
 
@@ -279,12 +342,12 @@ module StackVM::Machine
     def op_loadi
 
       # Decodes the amount of bytes that are being pushed
-      type = read_memory(@regs[Reg::IP] + 2, 2)
+      type = memory_read(@regs[Reg::IP] + 2, 2)
       type = Pointer(UInt32).new type.to_unsafe.address
       amount_of_bytes = type[0]
 
       # Reads *type* bytes
-      value = read_memory(@regs[Reg::IP] + 6, amount_of_bytes)
+      value = memory_read(@regs[Reg::IP] + 6, amount_of_bytes)
       stack_push value
 
       return false

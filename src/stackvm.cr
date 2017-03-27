@@ -1,33 +1,37 @@
 require "./stackvm/**"
+require "./assembler/utils.cr"
 
 module StackVM
   include Semantic
   include Machine
 
-  DEBUG_PROGRAM = Slice[
+  debug_program = Array(UInt8 | UInt16 | UInt32 | UInt64){
 
-    # RPUSH %ip
-    0b00000000_u8, 0b00000000_u8,
-    0b00010000_u8,
+    # LOADI DWORD 1
+    0b00000000_00011100_u16,
+    0b00000000_00000000_00000000_00000100_u32,
+    0b00000000_00000000_00000000_11111111_u32,
 
-    # RPUSH %ip
-    0b00000000_u8, 0b00000000_u8,
-    0b00010000_u8,
+    # LOADI DWORD 1
+    0b00000000_00011100_u16,
+    0b00000000_00000000_00000000_00000100_u32,
+    0b00000000_00000000_00000000_11111111_u32,
 
-    # RPUSH %ip
-    0b00000000_u8, 0b00000000_u8,
-    0b00010000_u8,
+    # RPOP
+    0b00000000_00000001_u16,
+    0b11000000_u8,
 
-    # RPUSH %ip
-    0b00000000_u8, 0b00000000_u8,
-    0b00010000_u8,
+    # RPOP
+    0b00000000_00000001_u16,
+    0b10000000_u8,
 
-    # HALT
-    0b00110010_u8, 0b00000000_u8
-  ]
+    # HALT
+    0b00000000_00110010_u16
+  }
 
+  binary = Assembler::Utils.convert_opcodes debug_program
   machine = Machine::Machine.new
-  machine.flash DEBUG_PROGRAM
+  machine.flash binary
 
   machine.start
 

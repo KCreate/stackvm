@@ -5,8 +5,8 @@ describe StackVM::Machine do
   it "creates a new machine" do
     machine = StackVM::Machine::Machine.new 16
 
-    machine.regs.size.should eq 19
-    machine.regs.bytesize.should eq 152
+    machine.regs.size.should eq 20
+    machine.regs.bytesize.should eq 160
 
     machine.memory.size.should eq 16
     machine.memory.bytesize.should eq 16
