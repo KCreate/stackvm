@@ -20,8 +20,9 @@ module StackVM::Machine::Utils
       loop do
         ip = @machine.regs[Reg::IP]
         address = render_hex @machine.regs[Reg::IP], 8, :red
+        frame_pointer = render_hex @machine.regs[Reg::FP], 8, :green
 
-        command = Readline.readline "[#{address}]> ", true
+        command = Readline.readline "[#{frame_pointer}:#{address}]> ", true
 
         case command
         when "h", "help"

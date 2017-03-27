@@ -9,10 +9,12 @@ module StackVM
   include Utils
 
   debug_program = Array(UInt8 | UInt16 | UInt32 | UInt64){
-    LOADI, DWORD, 0xff_u32,
-    LOADI, DWORD, 0xff_u32,
-    RPOP, R0 | M_C,
-    RPOP, R0 | M_C | M_H,
+    LOADI, QWORD, 0xff_u64,
+    LOADI, QWORD, 0xff_u64,
+    RPOP, R0,
+    RPOP, R1,
+    RPUSH, R0,
+    RPUSH, R1,
     HALT
   }
 
