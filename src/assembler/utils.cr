@@ -18,11 +18,11 @@ module Assembler::Utils
 
     data.each do |num|
       case num
-      when .is_a? UInt8
-        binary[bc] = num
+      when .is_a?(UInt8), .is_a?(Int8)
+        binary[bc] = num.to_u8
         bc += 1
-      when .is_a? UInt16
-        val = Slice(UInt16).new 1, num
+      when .is_a?(UInt16), .is_a?(Int16)
+        val = Slice(UInt16).new 1, num.to_u16
         bytes = Pointer(UInt8).new val.to_unsafe.address
 
         0.upto 1 do |i|
@@ -30,8 +30,8 @@ module Assembler::Utils
         end
 
         bc += 2
-      when .is_a? UInt32
-        val = Slice(UInt32).new 1, num
+      when .is_a?(UInt32), .is_a?(Int32)
+        val = Slice(UInt32).new 1, num.to_u32
         bytes = Pointer(UInt8).new val.to_unsafe.address
 
         0.upto 3 do |i|
@@ -39,8 +39,8 @@ module Assembler::Utils
         end
 
         bc += 4
-      when .is_a? UInt64
-        val = Slice(UInt64).new 1, num
+      when .is_a?(UInt64), .is_a?(Int64)
+        val = Slice(UInt64).new 1, num.to_u64
         bytes = Pointer(UInt8).new val.to_unsafe.address
 
         0.upto 7 do |i|
@@ -77,6 +77,8 @@ module Assembler::Utils
       when .is_a? Bool
         binary[bc] = num ? 1_u8 : 0_u8
         bc += 1
+      else
+        puts "Skipped #{num.class}"
       end
     end
 
