@@ -32,6 +32,9 @@ module StackVM::Machine
       data.copy_to @memory
 
       @executable_size = data.bytesize.to_u64
+      @regs[Reg::IP] = 0_u64
+      @regs[Reg::SP] = @executable_size
+      @regs[Reg::FP] = @executable_size
 
       self
     end
@@ -63,10 +66,6 @@ module StackVM::Machine
 
     # Starts the execution of the machine
     def start
-      @regs[Reg::IP] = 0_u64
-      @regs[Reg::SP] = @executable_size
-      @regs[Reg::FP] = @executable_size
-
       while @instruction.opcode != OP::HALT
         cycle
       end
