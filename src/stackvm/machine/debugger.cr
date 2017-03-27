@@ -42,6 +42,8 @@ module StackVM::Machine::Utils
             @machine.cycle
           when "i", "instruction"
             instruction_info
+          when "j", "jmp"
+            jump
           else
             print_help
           end
@@ -66,6 +68,7 @@ module StackVM::Machine::Utils
         s, stack                : Show stack state
         c, cycle                : Run a single CPU cycle
         i, instruction          : Show info about the current instruction
+        j, jmp                  : Jump to a given address
       HELP
     end
 
@@ -95,6 +98,25 @@ module StackVM::Machine::Utils
         #{Meta::Descriptions[instruction.opcode]}
       DESC
       @output.puts ""
+    end
+
+    # Jump to a given address
+    private def jump
+      input = Readline.readline "[Address]> ", true
+
+      unless input
+        @output.puts "Could not read address"
+        return
+      end
+
+      address = input.to_u64?(underscore: true, prefix: true)
+
+      unless address
+        @output.puts "#{input} is not a valid address".colorize :red
+        return
+      end
+
+      @machine.regs[Reg::IP] = address
     end
 
     # Dump the contents of the executable
