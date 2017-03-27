@@ -173,30 +173,6 @@ module StackVM::Machine
       end
     end
 
-    # Outputs human-readable debug information to *output*
-    def status(output : IO)
-      output.puts "Memory-size: #{@memory.size}"
-      output.puts "Executable-size: #{@executable_size}"
-      output.puts "Registers:"
-      output.puts "
-  r0: 0x#{@regs[Reg::R0].to_s(16).rjust(16, '0')}    r8:  0x#{@regs[Reg::R8].to_s(16).rjust(16, '0')}
-  r1: 0x#{@regs[Reg::R1].to_s(16).rjust(16, '0')}    r9:  0x#{@regs[Reg::R9].to_s(16).rjust(16, '0')}
-  r2: 0x#{@regs[Reg::R2].to_s(16).rjust(16, '0')}    r10: 0x#{@regs[Reg::R10].to_s(16).rjust(16, '0')}
-  r3: 0x#{@regs[Reg::R3].to_s(16).rjust(16, '0')}    r11: 0x#{@regs[Reg::R11].to_s(16).rjust(16, '0')}
-  r4: 0x#{@regs[Reg::R4].to_s(16).rjust(16, '0')}    r12: 0x#{@regs[Reg::R12].to_s(16).rjust(16, '0')}
-  r5: 0x#{@regs[Reg::R5].to_s(16).rjust(16, '0')}    r13: 0x#{@regs[Reg::R13].to_s(16).rjust(16, '0')}
-  r6: 0x#{@regs[Reg::R6].to_s(16).rjust(16, '0')}    r14: 0x#{@regs[Reg::R14].to_s(16).rjust(16, '0')}
-  r7: 0x#{@regs[Reg::R7].to_s(16).rjust(16, '0')}    r15: 0x#{@regs[Reg::R15].to_s(16).rjust(16, '0')}
-
-  ip: 0x#{@regs[Reg::IP].to_s(16).rjust(16, '0')}    sp:  0x#{@regs[Reg::SP].to_s(16).rjust(16, '0')}
-  fp: 0x#{@regs[Reg::FP].to_s(16).rjust(16, '0')}
-      "
-      output.puts "Stack: #{@regs[Reg::SP] - @executable_size} bytes"
-
-      stack_memory = memory_read(@executable_size, @regs[Reg::SP] - @executable_size)
-      output.puts stack_memory.hexdump
-    end
-
     # Reads *amount* of bytes starting at *address*
     def memory_read(address, amount)
       begin

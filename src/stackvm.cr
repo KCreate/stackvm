@@ -2,38 +2,28 @@ require "./stackvm/**"
 require "./assembler/utils.cr"
 
 module StackVM
-  include Semantic
+  include Semantic::OP
+  include Semantic::Size
+  include Semantic::Reg
   include Machine
+  include Utils
 
   debug_program = Array(UInt8 | UInt16 | UInt32 | UInt64){
-
-    # LOADI DWORD 1
-    0b00000000_00011100_u16,
-    0b00000000_00000000_00000000_00000100_u32,
-    0b00000000_00000000_00000000_11111111_u32,
-
-    # LOADI DWORD 1
-    0b00000000_00011100_u16,
-    0b00000000_00000000_00000000_00000100_u32,
-    0b00000000_00000000_00000000_11111111_u32,
-
-    # RPOP
-    0b00000000_00000001_u16,
-    0b11000000_u8,
-
-    # RPOP
-    0b00000000_00000001_u16,
-    0b10000000_u8,
-
-    # HALT
-    0b00000000_00110010_u16
+    LOADI, DWORD, 0xff_u32,
+    LOADI, DWORD, 0xff_u32,
+    RPOP, R0 | M_C,
+    RPOP, R0 | M_C | M_H,
+    HALT
   }
 
+  # Compile the above program to bytes
   binary = Assembler::Utils.convert_opcodes debug_program
+
+  # Create and flash the virtual machine
   machine = Machine::Machine.new
   machine.flash binary
 
-  machine.start
-
-  machine.status STDOUT
+  # Starts the machine debugger
+  debugger = Debugger.new machine, STDOUT
+  debugger.start
 end

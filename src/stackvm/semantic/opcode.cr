@@ -70,7 +70,7 @@ module StackVM::Semantic
     # Miscellaneous
     NOP    = 0x30_u16 # Does nothing
     PUTS   = 0x31_u16 # Copy a type value from the stack into stdout
-    HALT   = 0x32_u16 # Halts the machine with a given 1 byte exit code from the stack
+    HALT   = 0x32_u16 # Halts the machine
 
     # Bitmasks
     M_S    = 0b10000000_00000000_u16 # Signed / Unsigned
