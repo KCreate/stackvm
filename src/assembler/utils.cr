@@ -3,6 +3,7 @@ module Assembler::Utils
 
   # Encodable values
   alias InstructionLiterals = Array(UInt8 | UInt16 | UInt32 | UInt64 | Float32 | Float64 | String)
+  alias EXE = InstructionLiterals
 
   # Converts an array of 8 - 64 bit numbers to a UInt8 slice
   def convert_opcodes(data : InstructionLiterals)

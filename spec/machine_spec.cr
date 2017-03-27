@@ -1,9 +1,16 @@
 require "./spec_helper.cr"
 
+include StackVM::Machine
+include StackVM::Semantic
+include StackVM::Semantic::OP
+include StackVM::Semantic::Reg
+include StackVM::Semantic::Size
+include Assembler::Utils
+
 describe StackVM::Machine do
 
   it "creates a new machine" do
-    machine = StackVM::Machine::Machine.new 16
+    machine = Machine.new 16
 
     machine.regs.size.should eq 20
     machine.regs.bytesize.should eq 160
@@ -13,7 +20,7 @@ describe StackVM::Machine do
   end
 
   it "reset's memory" do
-    machine = StackVM::Machine::Machine.new 16
+    machine = Machine.new 16
 
     machine.memory[0] = 25_u8
     machine.memory[0].should eq 25_u8
@@ -24,7 +31,7 @@ describe StackVM::Machine do
   end
 
   it "flashes data into the machine" do
-    machine = StackVM::Machine::Machine.new 16
+    machine = Machine.new 16
 
     machine.flash Slice[25_u8, 25_u8, 25_u8, 25_u8]
 
@@ -35,7 +42,7 @@ describe StackVM::Machine do
   end
 
   it "grows the machines memory section" do
-    machine = StackVM::Machine::Machine.new 16
+    machine = Machine.new 16
 
     machine.memory[0] = 25_u8
 
@@ -49,51 +56,69 @@ describe StackVM::Machine do
   end
 
   it "fetches an instruction" do
-    machine = StackVM::Machine::Machine.new 16
-    machine.flash Slice(UInt8).new(2).tap { |memory|
-      memory[0] = 0b00011100_u8
-      memory[1] = 0b10100000_u8
+    machine = Machine.new 16
+    machine.flash Assembler::Utils.convert_opcodes EXE{
+      LOADI | M_S | M_B
     }
 
     instruction = machine.fetch
 
-    instruction.should be_a StackVM::Machine::Instruction
+    instruction.should be_a Instruction
     instruction.flag_s.should eq true
     instruction.flag_t.should eq false
     instruction.flag_b.should eq true
-    instruction.opcode.should eq StackVM::Semantic::OP::LOADI
+    instruction.opcode.should eq LOADI
   end
 
   it "decodes the length of the LOADI instruction" do
     machine = StackVM::Machine::Machine.new 32
-    machine.flash Slice(UInt8).new(8).tap { |memory|
-
-      # LOADI
-      memory[0] = 0b00011100_u8
-      memory[1] = 0b00000000_u8
-
-      # WORD
-      memory[2] = 0b00000010_u8
-      memory[3] = 0b00000000_u8
-      memory[4] = 0b00000000_u8
-      memory[5] = 0b00000000_u8
-
-      # 25
-      memory[6] = 0b00011001_u8
-      memory[7] = 0b00000000_u8
+    machine.flash Assembler::Utils.convert_opcodes EXE{
+      LOADI, WORD, 25_u16
     }
 
     instruction = machine.fetch
 
-    instruction.should be_a StackVM::Machine::Instruction
+    instruction.should be_a Instruction
     instruction.flag_s.should eq false
     instruction.flag_t.should eq false
     instruction.flag_b.should eq false
-    instruction.opcode.should eq StackVM::Semantic::OP::LOADI
+    instruction.opcode.should eq LOADI
 
     length = machine.decode_instruction_length instruction
 
     length.should eq 8
+  end
+
+  describe "instructions" do
+
+    it "runs RPUSH" do
+      machine = Machine.new 32
+      machine.flash Assembler::Utils.convert_opcodes EXE{
+        RPUSH, R0,
+        RPUSH, R0 | M_C,
+        RPUSH, R0 | M_C | M_H,
+        HALT
+      }
+
+      start_sp = machine.regs[StackVM::Semantic::Reg::SP]
+      start_sp.should eq 11
+
+      machine.cycle
+
+      sp = machine.regs[StackVM::Semantic::Reg::SP]
+      sp.should eq 19
+
+      machine.cycle
+
+      sp = machine.regs[StackVM::Semantic::Reg::SP]
+      sp.should eq 23
+
+      machine.cycle
+
+      sp = machine.regs[StackVM::Semantic::Reg::SP]
+      sp.should eq 27
+    end
+
   end
 
 end
