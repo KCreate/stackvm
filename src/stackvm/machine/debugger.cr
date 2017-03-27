@@ -18,32 +18,36 @@ module StackVM::Machine::Utils
     # Starts the main loop
     def start
       loop do
-        ip = @machine.regs[Reg::IP]
-        address = render_hex @machine.regs[Reg::IP], 8, :red
-        frame_pointer = render_hex @machine.regs[Reg::FP], 8, :green
+        begin
+          ip = @machine.regs[Reg::IP]
+          address = render_hex @machine.regs[Reg::IP], 8, :red
+          frame_pointer = render_hex @machine.regs[Reg::FP], 8, :green
 
-        command = Readline.readline "[#{frame_pointer}:#{address}]> ", true
+          command = Readline.readline "[#{frame_pointer}:#{address}]> ", true
 
-        case command
-        when "h", "help"
-          print_help
-        when "q", "quit"
-          break
-        when "m", "machine"
-          machine_info
-        when "e", "executable_dump"
-          executable_dump
-        when "r", "register"
-          register_info
-        when "s", "stack"
-          stack_info
-        when "c", "cycle"
-          @machine.cycle
-        when "i", "instruction"
-          instruction_info
-          print "\n"
-        else
-          print_help
+          case command
+          when "h", "help"
+            print_help
+          when "q", "quit"
+            break
+          when "m", "machine"
+            machine_info
+          when "e", "executable_dump"
+            executable_dump
+          when "r", "register"
+            register_info
+          when "s", "stack"
+            stack_info
+          when "c", "cycle"
+            @machine.cycle
+          when "i", "instruction"
+            instruction_info
+          else
+            print_help
+          end
+        rescue e : Exception
+          @output.puts "An exception happened:"
+          @output.puts e
         end
       end
     end
@@ -79,12 +83,18 @@ module StackVM::Machine::Utils
       h2 = render_hex instruction.flag_t ? 1 : 0, 1, :green
       h3 = render_hex instruction.flag_b ? 1 : 0, 1, :green
 
+      unless Meta::Opcodes.has_key? instruction.opcode
+        @output.puts "#{opcode} is not a valid instruction. You've probably hit stack memory."
+        return
+      end
+
       @output.puts "Opcode: #{Meta::Opcodes[instruction.opcode]}"
       @output.puts "Header: #{h1} #{h2} #{h3}"
       @output.puts "Description:"
       @output.puts <<-DESC
         #{Meta::Descriptions[instruction.opcode]}
       DESC
+      @output.puts ""
     end
 
     # Dump the contents of the executable

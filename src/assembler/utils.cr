@@ -61,7 +61,6 @@ module Assembler::Utils
         bc += 8
       when .is_a? String
         bytes = num.to_slice
-        puts "compiling #{bytes.size} bytes for string #{num}"
 
         0.upto bytes.size - 1 do |i|
           binary[bc + i] = bytes[i]
