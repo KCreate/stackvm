@@ -50,6 +50,7 @@ module StackVM::Machine::Utils
         rescue e : Exception
           @output.puts "An exception happened:"
           @output.puts e
+          @output.puts e.backtrace.join "\n"
         end
       end
     end

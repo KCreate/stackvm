@@ -12,7 +12,11 @@ module StackVM::Machine
     property instruction : Instruction
     property executable_size : UInt64
 
-    def initialize(memory_size = DEFAULT_MEMORY_SIZE)
+    property input : IO
+    property output : IO
+    property error : IO
+
+    def initialize(memory_size = DEFAULT_MEMORY_SIZE, @input = STDIN, @output = STDOUT, @error = STDERR)
       @regs = Slice(UInt64).new(20, 0_u64)
       @memory = Slice(UInt8).new(memory_size, 0_u8)
       @instruction = Instruction.new 0b00000000_00110000_u16
@@ -123,6 +127,10 @@ module StackVM::Machine
         return op_exp
       when OP::LOADI
         return op_loadi
+      when OP::NOP
+        return false
+      when OP::PUTS
+        return op_puts
       when OP::HALT
         return op_halt
       else
@@ -254,6 +262,11 @@ module StackVM::Machine
       value = memory_read @regs[Reg::SP] - amount, amount
       @regs[Reg::SP] -= amount
       value
+    end
+
+    # Reads *amount* of bytes from the stack
+    def stack_read_bytes(amount)
+      memory_read @regs[Reg::SP] - amount, amount
     end
 
     # Pops a *type* value from the stack
@@ -505,12 +518,31 @@ module StackVM::Machine
 
       # Decodes the amount of bytes that are being pushed
       type = memory_read(@regs[Reg::IP] + 2, 2)
-      type = Pointer(UInt32).new type.to_unsafe.address
-      amount_of_bytes = type[0]
+      amount_of_bytes = IO::ByteFormat::LittleEndian.decode UInt16, type
 
-      # Reads *type* bytes
+      # Reads *amount_of_bytes* bytes
       value = memory_read(@regs[Reg::IP] + 6, amount_of_bytes)
       stack_push value
+
+      return false
+    end
+
+    # Executes a PUTS instruction
+    #
+    # ```
+    # LOADI BYTE 25
+    # LOADI BYTE 50
+    # PUTS WORD # => prints [25, 50]
+    # ```
+    def op_puts
+
+      # Decodes the amount of bytes that are being read
+      type = memory_read(@regs[Reg::IP] + 2, 2)
+      amount_of_bytes = IO::ByteFormat::LittleEndian.decode UInt16, type
+
+      # Reads *amount_of_bytes* bytes
+      value = stack_read_bytes amount_of_bytes
+      @output.puts value
 
       return false
     end

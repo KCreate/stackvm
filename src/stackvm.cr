@@ -11,36 +11,12 @@ module StackVM
 
   # Compile the above program to bytes
   binary = Assembler::Utils.convert_opcodes EXE{
+    LOADI, BYTE, 0_u8,
+    LOADI, BYTE, 1_u8,
+    LOADI, BYTE, 2_u8,
+    LOADI, BYTE, 3_u8,
 
-    # 64 bit signed int
-    LOADI, QWORD, 25_u64,
-    LOADI, QWORD, 25_u64,
-    ADD | M_B,
-
-    # 32 bit signed int
-    LOADI, DWORD, 25_u32,
-    LOADI, DWORD, 25_u32,
-    ADD,
-
-    # 64 bit unsigned int
-    LOADI, QWORD, 25_u64,
-    LOADI, QWORD, 25_u64,
-    ADD | M_B | M_S,
-
-    # 32 bit unsigned int
-    LOADI, DWORD, -1.to_u32,
-    LOADI, DWORD, 25_u32,
-    ADD | M_S,
-
-    # 64 bit float
-    LOADI, QWORD, 25_f64,
-    LOADI, QWORD, 25_f64,
-    ADD | M_B | M_T,
-
-    # 32 bit float
-    LOADI, DWORD, 25_f32,
-    LOADI, DWORD, 25_f32,
-    ADD | M_T,
+    PUTS, DWORD,
 
     HALT
   }

@@ -189,6 +189,23 @@ describe StackVM::Machine do
       machine.stack_read_value(Float32).should eq 50
     end
 
+    it "runs PUTS" do
+      io = IO::Memory.new
+
+      machine = Machine.new(64, output: io)
+      machine.flash Assembler::Utils.convert_opcodes EXE{
+        LOADI, BYTE, 0_u8,
+        LOADI, BYTE, 1_u8,
+        LOADI, BYTE, 2_u8,
+        LOADI, BYTE, 3_u8,
+        PUTS, DWORD,
+        HALT
+      }
+      machine.start
+
+      io.to_s.should eq "Bytes[0, 1, 2, 3]\n"
+    end
+
   end
 
 end
