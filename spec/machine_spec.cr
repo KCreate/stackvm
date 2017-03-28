@@ -171,6 +171,37 @@ describe StackVM::Machine do
       machine.regs[R0].should eq 5
     end
 
+    it "runs MOV" do
+      machine = Machine.new 128
+      machine.flash Assembler::Utils.convert_opcodes EXE{
+        LOADI, QWORD, 5_i64,
+        LOADI, QWORD, 10_i64,
+
+        RPOP, R0, # => 10
+        RPOP, R1, # => 5
+
+        MOV, R1, R0,
+
+        LOADI, DWORD, 5_i32,
+        RPOP, R2 | M_C,
+        MOV, R3, R2 | M_C,
+
+        LOADI, QWORD, 5_i64,
+        RPOP, R4,
+        MOV, R5 | M_C, R4,
+
+        HALT
+      }
+      machine.start
+
+      machine.regs[R0].should eq 10
+      machine.regs[R1].should eq 10
+      machine.regs[R2].should eq 5
+      machine.regs[R3].should eq 5
+      machine.regs[R4].should eq 5
+      machine.regs[R5].should eq 0
+    end
+
     it "runs arithmetic operations on integers" do
       machine = Machine.new 256
       machine.flash Assembler::Utils.convert_opcodes EXE{

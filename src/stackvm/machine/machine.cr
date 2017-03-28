@@ -122,6 +122,8 @@ module StackVM::Machine
         return op_incr
       when OP::DECR
         return op_decr
+      when OP::MOV
+        return op_mov
       when OP::ADD
         return op_add
       when OP::SUB
@@ -329,7 +331,21 @@ module StackVM::Machine
     # Writes *value* to *reg*
     def reg_write(reg : Register, value : Slice(UInt8))
       reg_write reg do |target|
-        value.copy_to target
+
+        # If the target is smaller than the value
+        # the value is trimmed from the start on
+        #
+        # Example:
+        # target  : 00000000 00000000 00000000 00000000
+        # value   : 00000011 00000011
+        # result  : 00000011 00000011 00000000 00000000
+        #
+        # target  : 00000000 00000000
+        # value   : 00110000 00110000 11000000 11000000
+        # result  : 11000000 11000000
+        value = value[value.size - target.size, target.size] if value.size > target.size
+
+        target.copy_from value
       end
     end
 
@@ -435,6 +451,23 @@ module StackVM::Machine
       reg_write reg do |target|
         IO::ByteFormat::LittleEndian.encode old - 1, target
       end
+    end
+
+    # Executes a MOV instruction
+    #
+    # ```
+    # R0 # => 25
+    # R1 # => 0
+    #
+    # MOV R1, R0
+    #
+    # R1 # => 25
+    # ```
+    def op_mov
+      target = Register.new memory_read(@regs[Reg::IP] + 2, 1)[0]
+      source = Register.new memory_read(@regs[Reg::IP] + 3, 1)[0]
+      bytes = reg_read source
+      reg_write target, bytes
     end
 
     # Generates arithmetic instructions
