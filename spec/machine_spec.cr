@@ -133,6 +133,44 @@ describe StackVM::Machine do
       r0.should eq 25
     end
 
+    it "runs INCR" do
+      machine = Machine.new 64
+      machine.flash Assembler::Utils.convert_opcodes EXE{
+        LOADI, QWORD, 0_i64,
+        RPOP, R0,
+
+        INCR, R0,
+        INCR, R0,
+        INCR, R0,
+        INCR, R0,
+        INCR, R0,
+
+        HALT
+      }
+      machine.start
+
+      machine.regs[R0].should eq 5
+    end
+
+    it "runs DECR" do
+      machine = Machine.new 64
+      machine.flash Assembler::Utils.convert_opcodes EXE{
+        LOADI, QWORD, 10_i64,
+        RPOP, R0,
+
+        DECR, R0,
+        DECR, R0,
+        DECR, R0,
+        DECR, R0,
+        DECR, R0,
+
+        HALT
+      }
+      machine.start
+
+      machine.regs[R0].should eq 5
+    end
+
     it "runs arithmetic operations on integers" do
       machine = Machine.new 256
       machine.flash Assembler::Utils.convert_opcodes EXE{

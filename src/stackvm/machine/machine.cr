@@ -29,7 +29,10 @@ module StackVM::Machine
     # memory capacity
     def flash(data : Slice(UInt8))
       if data.bytesize > @memory.bytesize
-        raise Error.new Err::OUT_OF_MEMORY, "Trying to write more data than machine capacity"
+        raise Error.new(
+          Err::OUT_OF_MEMORY,
+          "Trying to write more data (#{data.bytesize}b) than machine capacity (#{@memory.bytesize}b)"
+        )
       end
 
       reset_memory
@@ -83,9 +86,11 @@ module StackVM::Machine
     # sets the IP to the address of the next instruction in memory
     def cycle
       @instruction = fetch
-      did_jump = execute
+      old_ip = @regs[Reg::IP]
+      execute
 
-      unless did_jump
+      # Only jump to the next instruction if the last instruction didn't modify the IP
+      if old_ip == @regs[Reg::IP]
         instruction_length = decode_instruction_length @instruction
         @regs[Reg::IP] += instruction_length
       end
@@ -113,6 +118,10 @@ module StackVM::Machine
         return op_rpush
       when OP::RPOP
         return op_rpop
+      when OP::INCR
+        return op_incr
+      when OP::DECR
+        return op_decr
       when OP::ADD
         return op_add
       when OP::SUB
@@ -319,6 +328,13 @@ module StackVM::Machine
 
     # Writes *value* to *reg*
     def reg_write(reg : Register, value : Slice(UInt8))
+      reg_write reg do |target|
+        value.copy_to target
+      end
+    end
+
+    # Yields a Slice to write data to
+    def reg_write(reg : Register)
 
       # Check for invalid register
       if reg.regcode < 0 || reg.regcode > 20
@@ -348,7 +364,7 @@ module StackVM::Machine
         Slice[0_u8, 0_u8, 0_u8, 0_u8].copy_to target
       end
 
-      value.copy_to target
+      yield target
 
       self
     end
@@ -364,7 +380,6 @@ module StackVM::Machine
       reg = memory_read(@regs[Reg::IP] + 2, 1)
       reg = Register.new reg[0]
       stack_push reg_read reg
-      return false
     end
 
     # Executes a RPOP instruction
@@ -382,8 +397,44 @@ module StackVM::Machine
       else
         reg_write reg, stack_pop 8
       end
+    end
 
-      return false
+    # Executes a INCR instruction
+    #
+    # ```
+    # R0 # => 0
+    # INCR R0
+    # R0 # => 1
+    # ```
+    def op_incr
+      reg = memory_read(@regs[Reg::IP] + 2, 1)
+      reg = Register.new reg[0]
+
+      old = reg_read reg
+      old = IO::ByteFormat::LittleEndian.decode(reg.subportion ? UInt32 : UInt64, old)
+
+      reg_write reg do |target|
+        IO::ByteFormat::LittleEndian.encode old + 1, target
+      end
+    end
+
+    # Executes a DECR instruction
+    #
+    # ```
+    # R0 # => 1
+    # DECR R0
+    # R0 # => 0
+    # ```
+    def op_decr
+      reg = memory_read(@regs[Reg::IP] + 2, 1)
+      reg = Register.new reg[0]
+
+      old = reg_read reg
+      old = IO::ByteFormat::LittleEndian.decode(reg.subportion ? UInt32 : UInt64, old)
+
+      reg_write reg do |target|
+        IO::ByteFormat::LittleEndian.encode old - 1, target
+      end
     end
 
     # Generates arithmetic instructions
@@ -449,8 +500,6 @@ module StackVM::Machine
             next operand_length
           end
         end
-
-        return false
       end
     end
 
@@ -523,8 +572,6 @@ module StackVM::Machine
       # Reads *amount_of_bytes* bytes
       value = memory_read(@regs[Reg::IP] + 6, amount_of_bytes)
       stack_push value
-
-      return false
     end
 
     # Executes a PUTS instruction
@@ -543,8 +590,6 @@ module StackVM::Machine
       # Reads *amount_of_bytes* bytes
       value = stack_read_bytes amount_of_bytes
       @output.puts value
-
-      return false
     end
 
     # Executes a HALT instruction
@@ -553,7 +598,6 @@ module StackVM::Machine
     # HALT
     # ```
     def op_halt
-      return false
     end
   end
 
