@@ -245,6 +245,18 @@ describe StackVM::Machine do
       machine.stack_read_value(Float32).should eq 256
     end
 
+    it "runs NOP" do
+      machine = Machine.new 8
+      machine.flash Assembler::Utils.convert_opcodes EXE{
+        NOP, NOP, NOP,
+        HALT
+      }
+
+      machine.start
+
+      machine.regs[IP].should eq 8
+    end
+
     it "runs PUTS" do
       io = IO::Memory.new
 
@@ -260,6 +272,17 @@ describe StackVM::Machine do
       machine.start
 
       io.to_s.should eq "Bytes[0, 1, 2, 3]\n"
+    end
+
+    it "runs HALT" do
+      machine = Machine.new 8
+      machine.flash Assembler::Utils.convert_opcodes EXE{
+        HALT, HALT
+      }
+
+      machine.start
+
+      machine.regs[IP].should eq 2
     end
 
   end
