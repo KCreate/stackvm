@@ -133,60 +133,116 @@ describe StackVM::Machine do
       r0.should eq 25
     end
 
-    it "runs ADD" do
+    it "runs arithmetic operations on integers" do
       machine = Machine.new 256
       machine.flash Assembler::Utils.convert_opcodes EXE{
 
-        # 64 bit signed int
-        LOADI, QWORD, 25_u64,
-        LOADI, QWORD, 25_u64,
-        ADD | M_B,
-
-        # 32 bit signed int
-        LOADI, DWORD, 25_u32,
-        LOADI, DWORD, 25_u32,
+        # ADD
+        LOADI, DWORD, 25,
+        LOADI, DWORD, 25,
         ADD,
 
-        # 64 bit unsigned int
-        LOADI, QWORD, 25_u64,
-        LOADI, QWORD, 25_u64,
-        ADD | M_B | M_S,
+        # SUB
+        LOADI, DWORD, 500,
+        LOADI, DWORD, 50,
+        SUB,
 
-        # 32 bit unsigned int
-        LOADI, DWORD, -1.to_u32,
-        LOADI, DWORD, 25_u32,
-        ADD | M_S,
+        # MUL
+        LOADI, DWORD, 3,
+        LOADI, DWORD, 10,
+        MUL,
 
-        # 64 bit float
-        LOADI, QWORD, 25_f64,
-        LOADI, QWORD, 25_f64,
-        ADD | M_B | M_T,
+        # DIV
+        LOADI, DWORD, 100,
+        LOADI, DWORD, 4,
+        DIV,
 
-        # 32 bit float
-        LOADI, DWORD, 25_f32,
-        LOADI, DWORD, 25_f32,
-        ADD | M_T,
+        # REM
+        LOADI, DWORD, 110,
+        LOADI, DWORD, 25,
+        REM,
+
+        # EXP
+        LOADI, DWORD, 2,
+        LOADI, DWORD, 8,
+        EXP,
 
         HALT
       }
 
       machine.cycle 3
-      machine.stack_read_value(Int64).should eq 50
-
-      machine.cycle 3
       machine.stack_read_value(Int32).should eq 50
 
       machine.cycle 3
-      machine.stack_read_value(Int64).should eq 50
+      machine.stack_read_value(Int32).should eq 450
 
       machine.cycle 3
-      machine.stack_read_value(Int32).should eq 24
+      machine.stack_read_value(Int32).should eq 30
 
       machine.cycle 3
-      machine.stack_read_value(Float64).should eq 50
+      machine.stack_read_value(Int32).should eq 25
+
+      machine.cycle 3
+      machine.stack_read_value(Int32).should eq 10
+
+      machine.cycle 3
+      machine.stack_read_value(Int32).should eq 256
+    end
+
+    it "runs arithmetic operations on floating-point values" do
+      machine = Machine.new 256
+      machine.flash Assembler::Utils.convert_opcodes EXE{
+
+        # ADD
+        LOADI, DWORD, 25_f32,
+        LOADI, DWORD, 25_f32,
+        ADD | M_T,
+
+        # SUB
+        LOADI, DWORD, 500_f32,
+        LOADI, DWORD, 50_f32,
+        SUB | M_T,
+
+        # MUL
+        LOADI, DWORD, 3_f32,
+        LOADI, DWORD, 10_f32,
+        MUL | M_T,
+
+        # DIV
+        LOADI, DWORD, 100_f32,
+        LOADI, DWORD, 4_f32,
+        DIV | M_T,
+
+        # REM
+        LOADI, DWORD, 110_f32,
+        LOADI, DWORD, 25_f32,
+        REM | M_T,
+
+        # EXP
+        LOADI, DWORD, 2_f32,
+        LOADI, DWORD, 8_f32,
+        EXP | M_T,
+
+        HALT
+      }
 
       machine.cycle 3
       machine.stack_read_value(Float32).should eq 50
+
+      machine.cycle 3
+      machine.stack_read_value(Float32).should eq 450
+
+      machine.cycle 3
+      machine.stack_read_value(Float32).should eq 30
+
+      machine.cycle 3
+      machine.stack_read_value(Float32).should eq 25
+
+      machine.cycle 3
+      machine.stack_read_value(Float32).should eq 10
+
+      machine.cycle 3
+      machine.stack_read_value(Float32).should eq 256
     end
 
     it "runs PUTS" do

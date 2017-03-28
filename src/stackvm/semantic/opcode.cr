@@ -73,10 +73,10 @@ module StackVM::Semantic
     HALT   = 0x32_u16
 
     # Bitmasks
-    M_S    = 0b10000000_00000000_u16
-    M_T    = 0b01000000_00000000_u16
-    M_B    = 0b00100000_00000000_u16
-    M_O    = 0b00011111_11111111_u16
+    M_S    = 0b10000000_00000000_u16 # Signed / Unsigned
+    M_T    = 0b01000000_00000000_u16 # Int / Float
+    M_B    = 0b00100000_00000000_u16 # 32-bit / 64-bit
+    M_O    = 0b00011111_11111111_u16 # Opcode
   end
 
 end
