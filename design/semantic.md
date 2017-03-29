@@ -16,7 +16,7 @@ and linear random-access-memory.
 
 | Name                    | Value  | Description                                                       |
 |-------------------------|--------|-------------------------------------------------------------------|
-| `REGULAR_EXIT`          | `0x00` | Operation would overflow the stack                                |
+| `REGULAR_EXIT`          | `0x00` | The machine exited normally                                       |
 | `STACKOVERFLOW`         | `0x01` | Operation would overflow the stack                                |
 | `STACKUNDERFLOW`        | `0x02` | Operation would underflow the stack (e.g `POP` on an empty stack) |
 | `ILLEGAL_MEMORY_ACCESS` | `0x03` | Memory read or write is out-of-bounds                             |
@@ -33,53 +33,49 @@ and linear random-access-memory.
 | `ip`           | Instruction pointer |
 | `sp`           | Stack pointer       |
 | `fp`           | Frame pointer       |
+| `cr`           | Carry register      |
 | `ext`          | Exit code           |
 
-Each register can hold a 64-bit value.
+- `ip` holds a pointer to the current instruction
+- `sp` holds a pointer to the first byte above the stack
+- `fp` holds a pointer to the base of the current stack-frame
+- `cr` holds the result of a comparison, or the argument to the `SYSCALL` instruction
+- `ext` holds the exit code of the machine.
 
-You can target the lower or upper half of a register by putting a `l` or `u` char in front of it's name.
-They respectively stand for lower and upper.
-
-Below is an example with the `r0` register.
-```
-r0 - 64-bits - Complete register
-|
-+------------------------------------------------------------------
-
-00000000000000000000000000000000   00000000000000000000000000000000
-
-+-------------------------------   +-------------------------------
-|                                  |
-lr0 - 32-bits - Lower half         ur0 - 32-bits - Upper half
+Each register can hold a 64-bit value. Each register can also be access in `DWORD`, `WORD` and `BYTE` mode.
+Do so by appending either `d`, `w` or `b` to the end of the register name. You can also choose which side
+to access by adding `$` to the beginning of the register. Below is a visual representation
+of how a register can be accessed:
 
 ```
+ r0:   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+ r0d:  00000000 00000000 00000000 00000000
+ r0w:  00000000 00000000
+ r0b:  00000000
+$r0d:                                      00000000 00000000 00000000 00000000
+$r0w:                                      00000000 00000000
+$r0b:                                      00000000
+```
 
-When reading from a sub-register, they return a 32-bit integer.
-If you write a value bigger than 32-bits to one of the sub-registers, the value will be truncated
-to fit (higher-order bits will be truncated).
+If you try to write a value bigger than the capacity of a register(e.g `mov %r0b, %r0w`), the value is trimmed.
 
-The `ip` register contains a pointer, pointing to the instruction that's next to be executed.
+```assembly
+; Before
+;
+; r0w: 00000011 11000000
+; r0b: 00000000
 
-The `sp` register contains a pointer, pointing to the address above the current top of the stack
-(e.g If the stack starts at offset `0xA0` and contains 7 bytes, the `sp` register would contain `0xA7`).
+mov %r0b, %r0w
 
-The `fp` register contains a pointer, pointing to the base of the current stack-frame.
+; After
+;
+; r0b: 00000011
+```
 
 ## Memory
 
-The machine can be initialized with a variable amount of memory. Unlike most other systems, the stack grows towards high
+The machine can be initialized with a variable amount of memory. The stack grows towards high
 addresses.
-
-## Value types
-
-Calculations inside the machine support the following types:
-
-- `32-bit Integer`
-- `64-bit Integer`
-- `32-bit Floating-point`
-- `64-bit Floating-point`
-
-Neither of these values are inherently signed or unsigned, the operations on them however are.
 
 ## Size specifiers
 
@@ -96,160 +92,138 @@ You can use these types in places where an instruction expects a type (e.g `TR`,
 
 ## Instructions
 
-Instructions are written using their name and zero or more modifiers to oeprate on the instruction header.
-
-You can set these header bits by adding the corresponding suffixes to the instruction name.
-The suffixes are separated via a dot (`.`) character from each other and from the instruction.
-They are order-insensitive and can also be duplicated (e.g `push.i32.i32` is equal to `push.i32`)
-
-| Suffix | Description                                                        |
-|--------|--------------------------------------------------------------------|
-| `i`    | Sets the `S` bit to `0`                                            |
-| `u`    | Sets the `S` bit to `1`                                            |
-| `r`    | Sets the `T` bit to `1`                                            |
-| `a`    | Sets the `T` bit to `0`                                            |
-| `i32`  | Sets the `S` bit to `0`, the `T` bit to `0` and the `B` bit to `0` |
-| `i64`  | Sets the `S` bit to `0`, the `T` bit to `0` and the `B` bit to `1` |
-| `u32`  | Sets the `S` bit to `1`, the `T` bit to `0` and the `B` bit to `0` |
-| `u64`  | Sets the `S` bit to `1`, the `T` bit to `0` and the `B` bit to `1` |
-| `f32`  | Sets the `T` bit to `1` and the `B` bit to `0`                     |
-| `f64`  | Sets the `T` bit to `1` and the `B` bit to `1`                     |
-
-When encoding immediate values, these headers bits have no meaning and are simply ignored.
-
-The `B` bit only has meaning for arithmetic or comparison instructions.
-If an instruction takes its size via an argument, the `B` is irrelevant unless stated otherwise.
+Instructions are names assigned to a specific opcode. Opcodes range from `0` to `255`.
+For more information, [see encoding.md](encoding.md).
 
 ## Instruction descriptions
 
 Each instruction in the machine is documented below.
 The `Arguments` section, if present, follows the following naming convention:
 
-- `value` Value of the same size as the instruction.
-- `reg` The name of a register prefixed with a `%` character.
+- `value` Immediate value.
+- `reg` Register descriptor.
 - `type` Size specifier (e.g `BYTE` or `WORD`).
 
-If a register or argument name is displayed with brackets around it (e.g `[source]` or `[r0]`)
-the value inside the register is meant.
+If a register is surrounded with brackets it's to be interpreted as a pointer.
 
 ## Reading from and writing to registers
 
-| Name    | Arguments      | Description                                                         |
-|---------|----------------|---------------------------------------------------------------------|
-| `RPUSH` | reg            | Push the value of a register onto the stack                         |
-| `RPOP`  | reg            | Pop the top of the stack into a register                            |
-| `INCR`  | reg            | Increment the value inside a register by 1                          |
-| `DECR`  | reg            | Decrement the value inside a register by 1                          |
-| `MOV`   | target, source | Copies the contents of the source register into the target register |
+| Name     | Arguments         | Description                                                                    |
+|----------|-------------------|--------------------------------------------------------------------------------|
+| `RPUSH`  | reg               | Push `reg` onto the stack                                                      |
+| `RPOP`   | reg, type         | Pop a `type` value from the stack into `reg`                                   |
+| `MOV`    | target, source    | Copies `source` into `target`                                                  |
+| `LOADI`  | reg, type, value  | Read a `type` value directly from the instruction stream and store it in `reg` |
 
-## Arithmetic instructions
+## Integer arithmetic instructions
 
-| Name   | Description                                                 |
-|--------|-------------------------------------------------------------|
-| `ADD`  | Push the sum of the top two values                          |
-| `SUB`  | Push the difference of the top two values (`lower - upper`) |
-| `MUL`  | Push the product of the top two values                      |
-| `DIV`  | Push the quotient of the top two values (`lower / upper`)   |
-| `REM`  | Push the remainder of the top two values (`lower % upper`)  |
-| `EXP`  | Push the power of the top two values (`lower ** upper`)     |
+| Name   | Arguments  | Description                                             |
+|--------|------------|---------------------------------------------------------|
+| `IADD` | rst, reg1, reg2 | Add reg2 to reg1 and store in `rst`                |
+| `ISUB` | rst, reg1, reg2 | Subtract reg2 from reg1 and store in `rst`         |
+| `IMUL` | rst, reg1, reg2 | Multiply reg1 by reg2 and store in `rst`           |
+| `IDIV` | rst, reg1, reg2 | Divide reg1 by reg2 and store in `rst`             |
+| `IREM` | rst, reg1, reg2 | Put the remainder of (reg1 % reg2) into `rst`      |
+| `IEXP` | rst, reg1, reg2 | Raise reg1 to the power of reg2 and store in `rst` |
+
+## Floating-point arithmetic instructions
+
+Registers passed to these instructions can only be in full or `DWORD` mode.
+If a full mode register is passed, the type is assumbed to be `float`, if the register
+is in DWORD mode, `double` is assumed. When trying to store in a register that has
+insufficient size, the machine will crash
+
+| Name   | Arguments  | Description                                             |
+|--------|------------|---------------------------------------------------------|
+| `FADD` | rst, reg1, reg2 | Add reg2 to reg1 and store in `rst`                |
+| `FSUB` | rst, reg1, reg2 | Subtract reg2 from reg1 and store in `rst`         |
+| `FMUL` | rst, reg1, reg2 | Multiply reg1 by reg2 and store in `rst`           |
+| `FDIV` | rst, reg1, reg2 | Divide reg1 by reg2 and store in `rst`             |
+| `FREM` | rst, reg1, reg2 | Put the remainder of (reg1 % reg2) into `rst`      |
+| `FEXP` | rst, reg1, reg2 | Raise reg1 to the power of reg2 and store in `rst` |
 
 ## Comparison instructions
 
-All comparison instructions push a 32-bit integer onto the stack.
-
-| Name  | Description                                                         |
-|-------|---------------------------------------------------------------------|
-| `CMP` | Push 0 if the top two values are equal                              |
-| `LT`  | Push 0 if the second-highest value is less than the top             |
-| `GT`  | Push 0 if the second-highest value is greater than the top          |
-| `LTE` | Push 0 if the second-highest value is less or equal than the top    |
-| `GTE` | Push 0 if the second-highest value is greater or equal than the top |
+| Name  | Arguments | Description                                                                 |
+|-------|-----------|-----------------------------------------------------------------------------|
+| `CMP` | reg1, reg | Set `%cr` to `0` if `reg1` is equal to `reg2`, otherwise `1`                |
+| `LT`  | reg1, reg | Set `%cr` to `0` if `reg1` is less than `reg2`, otherwise `1`               |
+| `GT`  | reg1, reg | Set `%cr` to `0` if `reg1` is greater than `reg2`, otherwise `1`            |
+| `ULT` | reg1, reg | Set `%cr` to `0` if `reg1` is less than `reg2` (unsigned), otherwise `1`    |
+| `UGT` | reg1, reg | Set `%cr` to `0` if `reg1` is greater than `reg2` (unsigned), otherwise `1` |
 
 ## Bitwise instructions
 
-| Name   | Description                                                             |
-|--------|-------------------------------------------------------------------------|
-| `SHR`  | Shift the bits of the top value to the right n times (`lower >> upper`) |
-| `SHL`  | Shift the bits of the top value to the left n times (`lower >> upper`)  |
-| `AND`  | Push bitwise AND of the top two values (`lower & upper`)                |
-| `XOR`  | Push bitwise OR of the top two values (`lower ^ upper`)                 |
-| `NAND` | Push bitwise NAND of the top two values (`~(lower & upper)`)            |
-| `OR`   | Push bitwise OR of the top two values (`lower OR upper`)                |
-| `NOT`  | Push bitwise NOT of the top value                                       |
-
-## Casting instructions
-
-| Name    | Arguments  | Description                                 |
-|---------|------------|---------------------------------------------|
-| `TRUNC` | type, type | Truncate a value from `type1` to `type2`    |
-| `SE`    | type, type | Sign-extend a value from `type1` to `type2` |
-| `ZE`    | type, type | Zero-extend a value from `type1` to `type2` |
+| Name  | Arguments       | Description                                        |
+|-------|-----------------|----------------------------------------------------|
+| `SHR` | rst, reg1, reg2 | Right-shift `reg1` `reg2` times and store in `rst` |
+| `SHL` | rst, reg1, reg2 | Left-shift `reg1` `reg2` times and store in `rst`  |
+| `AND` | rst, reg1, reg2 | Store bitwise AND of `reg1` and `reg2` into `rst`  |
+| `XOR` | rst, reg1, reg2 | Store bitwise XOR of `reg1` and `reg2` into `rst`  |
+| `NAND`| rst, reg1, reg2 | Store bitwise NAND of `reg1` and `reg2` into `rst` |
+| `OR`  | rst, reg1, reg2 | Store bitwise OR of `reg1` and `reg2` into `rst`   |
+| `NOT` | rst, reg1       | Store bitwise NOT of `reg1` into `rst`             |
 
 ## Stack instructions
 
-| Name     | Arguments    | Description                                  |
-|----------|--------------|----------------------------------------------|
-| `LOAD`   | type, offset | Load a *type* value located at `fp + offset` |
-| `LOADR`  | type, reg    | Load a *type* value located at `fp + [reg]`  |
-| `LOADI`  | type, value  | Load an immediate *type* value               |
-| `STORE`  | type, offset | Pop a *type* value and save at `fp + offset` |
-| `STORER` | type, reg    | Pop a *type* value and save at `fp + [reg]`  |
-| `INC`    | type, offset | Increment a *type* value at `fp + offset`    |
-| `DEC`    | type, offset | Decrement a *type* value at `fp + offset`    |
+| Name     | Arguments         | Description                                                       |
+|----------|-------------------|-------------------------------------------------------------------|
+| `LOAD`   | type, offset, reg | Read a `type` value from `fp + offset` and store it in `reg`      |
+| `LOADR`  | type, offset, reg | Read a `type` value from `fp + [offset]` and store it in `reg`    |
+| `PUSHS`  | type, offset      | Read a `type` value from `fp + offset` and push it onto the stack |
+| `LOADS`  | type, reg         | Read a `type` value from `fp + [reg]` and push it onto the stack  |
+| `STORE`  | offset, reg       | Store the contents of `reg` at `fp + offset`                      |
 
 ## Memory read / write
 
-| Name     | Arguments            | Description                                                              |
-|----------|----------------------|--------------------------------------------------------------------------|
-| `READ`   | type, address        | Read a *type* value from *address* and push it onto the stack            |
-| `READR`  | type, reg            | Read a *type* value from `[reg]` and push it onto the stack              |
-| `WRITE`  | type, address        | Reads a *type* value from the stack and writes it to the given *address* |
-| `WRITER` | type, reg            | Reads a *type* value from the stack and writes it to `[reg]`             |
-| `COPY`   | type, target, source | Reads a *type* value at *source* and writes it to the given *target*     |
-| `COPYR`  | type, target, source | Reads a *type* value from `[source]` and writes it to `[target]`         |
+| Name      | Arguments            | Description                                                     |
+|-----------|----------------------|-----------------------------------------------------------------|
+| `READ`    | type, address, reg   | Read a `type` value from `[address]` and store it in `reg`      |
+| `READC`   | type, address, reg   | Read a `type` value from `address` and store it in `reg`        |
+| `READS`   | type, address, reg   | Read a `type` value from `[address]` and push it onto the stack |
+| `READCS`  | type, address, reg   | Read a `type` value from `address` and push it onto the stack   |
+| `WRITE`   | reg, address         | Write the contents of `reg` to `[address]`                      |
+| `WRITEC`  | reg, address         | Write the contents of `reg` to `address`                        |
+| `WRITES`  | type, address        | Pop a `type` value from the stack and write it to `[address]`   |
+| `WRITECS` | type, address        | Pop a `type` value from the stack and write it to `address`     |
+| `COPY`    | type, target, source | Copy a `type` value from `[source]` to `[target]`               |
+| `COPYC`   | type, target, source | Copy a `type` value from `source` to `target`                   |
 
 ## Jump instructions
 
-Jump instructions allow you to jump to other places in your program.
-Jump instructions can either jump to an absolute offset (default),
-or relative to the current instruction by a given amount of bytes.
-
-You can toggle between absolute and relative mode by setting the `T` bit on the instruction.
-Use the `r` and `a` suffixes on the instruction name to do so.
-
-```
-; jumping to a given address
-jmp 10
-jmp.a 10
-
-; jumping 10 bytes forwards
-jmp.r 10
-
-; jumping 10 bytes backwards
-jmp.r -10
-```
-
-| Name    | Arguments | Description                                                              |
-|---------|-----------|--------------------------------------------------------------------------|
-| `JZ`    | offset    | Relative or absolute jump to given offset if top of the stack is `0`     |
-| `JZR`   | reg       | Relative or absolute jump to `[reg]` if top of the stack is `0`          |
-| `JNZ`   | offset    | Relative or absolute jump to given offset if top of the stack is not `0` |
-| `JNZR`  | reg       | Relative or absolute jump to `[reg]` if top of the stack is not `0`      |
-| `JMP`   | offset    | Unconditional relative or absolute jump to given offset                  |
-| `JMPR`  | reg       | Unconditional relative or absolute jump to `[reg]`                       |
-| `CALL`  | offset    | Relative or absolute jump to given offset, pushing a stack-frame         |
-| `CALLR` | reg       | Relative or absolute jump to `[reg]`, pushing a stack-frame              |
-| `RET`   |           | Return from the current stack-frame                                      |
+| Name    | Arguments   | Description                               |
+|---------|-------------|-------------------------------------------|
+| `JZ`    | reg, offset | Jump to `offset` if `reg` is `0`          |
+| `JZR`   | reg, offset | Jump to `[offset]` if `reg` is `0`        |
+| `JMP`   | offset      | Jump to `offset`                          |
+| `JMPR`  | offset      | Jump to `[offset]`                        |
+| `CALL`  | offset      | Push a stack frame and jump to `offset`   |
+| `CALLR` | offset      | Push a stack frame and jump to `[offset]` |
+| `RET`   | offset      | Return from the current stack frame       |
 
 ## Miscellaneous instructions
 
-The instructions below provide some useful functions.
+| Name      | Description  |
+|-----------|--------------|
+| `NOP`     | Does nothing |
+| `SYSCALL` | VM syscall   |
 
-| Name   | Arguments | Description       |
-|--------|-----------|-------------------|
-| `NOP`  |           | Does nothing      |
-| `PUTS` | type      |                   |
-| `HALT` |           | Halts the machine |
+## Syscalls
+
+Syscalls are subroutines implemented directly inside the machine that provide some useful functionality,
+such as doing IO or calling external functions. To make a syscall, push any arguments onto the stack,
+store the syscall id in the `cr` register and run the syscall instruction.
+
+The table below contains all available syscalls.
+
+| Name       | Opcode | Arguments | Description                                                                          |
+|------------|--------|-----------|--------------------------------------------------------------------------------------|
+| `malloc`   | `0x00` | type      | Returns a pointer to `type` bytes of memory. Returns `1_i32` on error.               |
+| `exit`     | `0x01` |           | Halt the machine                                                                     |
+| `debugger` | `0x02` |           | Breakpoint for debuggers. Behaves like `NOP` in case no debugger picks up the signal |
+| `grow`     | `0x03` |           | Doubles the machines memory. Returns `1_i32` on error.                               |
+
+Return values of syscalls are pushed onto the stack. Different syscalls may produce different return values.
 
 ## License
 

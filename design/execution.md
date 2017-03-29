@@ -37,48 +37,12 @@ the stack starts at address `0x19`).
 +------------------------+ <- Max. memory size
 ```
 
-Below is how memory and registers would look like on startup of the given program.
-
-Instructions:
-```
-LOADI DWORD 25
-LOADI DWORD 25
-ADD
-PUTS DWORD
-HALT
-```
-
-Registers:
-```
-FP: 0x28
-SP: 0x27
-```
-
-Memory:
-```
-0x00: LOADI DWORD 25   ; Int16, Int64, Int32
-0x0E: LOADI DWORD 25   ; Int16, Int64, Int32
-0x1C: ADD              ; Int16
-0x1E: PUTS DWORD       ; Int16, Int64
-0x28: 0                ; Int8
-0x29: 0                ; Int8
-0x2A: 0                ; Int8
-0x##: ...
-```
-
 ## Register initialisation
 
-All registers, except `SP` and `FP` will be zero-initialized.
+All registers, except `sp` and `fp` will be zero-initialized.
 
 ## Execution loop
 
-The `IP` register always points to the instruction that's next to to be executed. It gets incremented
-after the instruction has been read, but before the instruction is executed. The following pseudo-code
-shows this.
-
-```
-ip = m.regs[IP];
-instruction = m.memory[ip];
-m->regs[IP] += 1;
-execute(instruction)
-```
+The `ip` register always points to the current instruction. If the instruction modified the instruction
+pointer, it won't be incremented. If the instruction pointer wasn't accessed during the execution,
+it will be set to the address of the next instruction.

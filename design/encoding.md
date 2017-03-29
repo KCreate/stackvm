@@ -31,61 +31,46 @@ at all.
 
 ## Registers
 
-Registers are represented as 8-bit values.
-The below table contains the values of each register.
+Registers are represented as 8 bit values. The first three bits make up the header, the rest
+is the register code.
 
 ```
-   +- Register code
-   |
-   |
-   vvvvvv
-00 000000
-^^
-||
-||
-|+- First half / Right half
+    +- Register code
+    |
+    v
+000 00000
+^
 |
-+- Complete / Sub-portion
+|
+|
+|
+|
++- Register mode
 ```
 
-The first bit tells wether the full register is targeted or only a sub-portion.
-The second bit, only meaningful if the first bit is set to `1`, sets
-wether the first or second half is targeted.
-Bits 3 - 8 make up the register value.
+Register modes work like this
 
-| Name           | Value            |
-|----------------|------------------|
-| `r0` .. `r15`  | `0x00` .. `0x0F` |
-| `ip`           | `0x10`           |
-| `sp`           | `0x11`           |
-| `fp`           | `0x12`           |
-| `ext`          | `0x13`           |
+```
+000:  00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+001:  00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+010:  00000000 00000000 00000000 00000000
+100:  00000000 00000000
+110:  00000000
+011:                                      00000000 00000000 00000000 00000000
+101:                                      00000000 00000000
+111:                                      00000000
+```
 
 ## Instructions
 
-Instructions are represented as 16-bit values.
-
-The first three bits make up the header. It contains information about the signedness of the instruction
-and on what type it should operate on. The definitions of the header bit can change for each instruction.
-
-Each part of the header has it's own name (`S`, `T`, `B`)
-
-In the below diagram, `0` stands for the left value and `1` for the right value.
+Instructions are represented as 8 bit values.
 
 ```
-+- Header
++- Opcode
 |
-|   +- Instruction opcode
-|   |
-vvv vvvvvvvvvvvvv
-000 0000000000000
-^^^
-|||
-||+- B - 32-bit / 64-bit
-||
-|+- T - Integer / Floating-point
 |
-+- S - Signed / Unsigned
+v
+00000000
 ```
 
 ## Size specifiers
