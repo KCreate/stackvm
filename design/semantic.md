@@ -23,9 +23,9 @@ and linear random-access-memory.
 | `INVALID_INSTRUCTION`   | `0x04` | Unknown instruction                                               |
 | `INVALID_REGISTER`      | `0x05` | Unknown register                                                  |
 | `INVALID_JUMP`          | `0x06` | Trying to jump to an address that's out of bounds                 |
-| `OUT_OF_MEMORY`         | `0x07` | Not enough memory (Growing heap, loading program, etc.)           |
+| `OUT_OF_MEMORY`         | `0x07` | Not enough memory to load a program                               |
 
-## Registers
+## Registers
 
 | Name           | Description         |
 |----------------|---------------------|
@@ -117,14 +117,14 @@ If a register is surrounded with brackets it's to be interpreted as a pointer.
 
 ## Integer arithmetic instructions
 
-| Name   | Arguments  | Description                                             |
-|--------|------------|---------------------------------------------------------|
-| `IADD` | rst, reg1, reg2 | Add reg2 to reg1 and store in `rst`                |
-| `ISUB` | rst, reg1, reg2 | Subtract reg2 from reg1 and store in `rst`         |
-| `IMUL` | rst, reg1, reg2 | Multiply reg1 by reg2 and store in `rst`           |
-| `IDIV` | rst, reg1, reg2 | Divide reg1 by reg2 and store in `rst`             |
-| `IREM` | rst, reg1, reg2 | Put the remainder of (reg1 % reg2) into `rst`      |
-| `IEXP` | rst, reg1, reg2 | Raise reg1 to the power of reg2 and store in `rst` |
+| Name   | Arguments       | Description                                            |
+|--------|-----------------|--------------------------------------------------------|
+| `IADD` | rst, reg1, reg2 | Add `reg2` to `reg1` and store in `rst`                |
+| `ISUB` | rst, reg1, reg2 | Subtract `reg2` from `reg1` and store in `rst`         |
+| `IMUL` | rst, reg1, reg2 | Multiply `reg1` by `reg2` and store in `rst`           |
+| `IDIV` | rst, reg1, reg2 | Divide `reg1` by `reg2` and store in `rst`             |
+| `IREM` | rst, reg1, reg2 | Put the remainder of (`reg1` % `reg2`) into `rst`      |
+| `IEXP` | rst, reg1, reg2 | Raise `reg1` to the power of `reg2` and store in `rst` |
 
 ## Floating-point arithmetic instructions
 
@@ -133,24 +133,24 @@ If a full mode register is passed, the type is assumbed to be `float`, if the re
 is in DWORD mode, `double` is assumed. When trying to store in a register that has
 insufficient size, the machine will crash
 
-| Name   | Arguments  | Description                                             |
-|--------|------------|---------------------------------------------------------|
-| `FADD` | rst, reg1, reg2 | Add reg2 to reg1 and store in `rst`                |
-| `FSUB` | rst, reg1, reg2 | Subtract reg2 from reg1 and store in `rst`         |
-| `FMUL` | rst, reg1, reg2 | Multiply reg1 by reg2 and store in `rst`           |
-| `FDIV` | rst, reg1, reg2 | Divide reg1 by reg2 and store in `rst`             |
-| `FREM` | rst, reg1, reg2 | Put the remainder of (reg1 % reg2) into `rst`      |
-| `FEXP` | rst, reg1, reg2 | Raise reg1 to the power of reg2 and store in `rst` |
+| Name   | Arguments       | Description                                            |
+|--------|-----------------|--------------------------------------------------------|
+| `FADD` | rst, reg1, reg2 | Add `reg2` to `reg1` and store in `rst`                |
+| `FSUB` | rst, reg1, reg2 | Subtract `reg2` from `reg1` and store in `rst`         |
+| `FMUL` | rst, reg1, reg2 | Multiply `reg1` by `reg2` and store in `rst`           |
+| `FDIV` | rst, reg1, reg2 | Divide `reg1` by `reg2` and store in `rst`             |
+| `FREM` | rst, reg1, reg2 | Put the remainder of (`reg1` % `reg2`) into `rst`      |
+| `FEXP` | rst, reg1, reg2 | Raise `reg1` to the power of `reg2` and store in `rst` |
 
 ## Comparison instructions
 
-| Name  | Arguments | Description                                                                 |
-|-------|-----------|-----------------------------------------------------------------------------|
-| `CMP` | reg1, reg | Set `%cr` to `0` if `reg1` is equal to `reg2`, otherwise `1`                |
-| `LT`  | reg1, reg | Set `%cr` to `0` if `reg1` is less than `reg2`, otherwise `1`               |
-| `GT`  | reg1, reg | Set `%cr` to `0` if `reg1` is greater than `reg2`, otherwise `1`            |
-| `ULT` | reg1, reg | Set `%cr` to `0` if `reg1` is less than `reg2` (unsigned), otherwise `1`    |
-| `UGT` | reg1, reg | Set `%cr` to `0` if `reg1` is greater than `reg2` (unsigned), otherwise `1` |
+| Name  | Arguments | Description                                                               |
+|-------|-----------|----------------------------------------------------------------------------|
+| `CMP` | reg1, reg | Set `cr` to `0` if `reg1` is equal to `reg2`, otherwise `1`                |
+| `LT`  | reg1, reg | Set `cr` to `0` if `reg1` is less than `reg2`, otherwise `1`               |
+| `GT`  | reg1, reg | Set `cr` to `0` if `reg1` is greater than `reg2`, otherwise `1`            |
+| `ULT` | reg1, reg | Set `cr` to `0` if `reg1` is less than `reg2` (unsigned), otherwise `1`    |
+| `UGT` | reg1, reg | Set `cr` to `0` if `reg1` is greater than `reg2` (unsigned), otherwise `1` |
 
 ## Bitwise instructions
 
@@ -216,12 +216,12 @@ store the syscall id in the `cr` register and run the syscall instruction.
 
 The table below contains all available syscalls.
 
-| Name       | Opcode | Arguments | Description                                                                          |
-|------------|--------|-----------|--------------------------------------------------------------------------------------|
-| `malloc`   | `0x00` | type      | Returns a pointer to `type` bytes of memory. Returns `1_i32` on error.               |
-| `exit`     | `0x01` |           | Halt the machine                                                                     |
-| `debugger` | `0x02` |           | Breakpoint for debuggers. Behaves like `NOP` in case no debugger picks up the signal |
-| `grow`     | `0x03` |           | Doubles the machines memory. Returns `1_i32` on error.                               |
+| Name       | Opcode | Arguments | Description                                                                      |
+|------------|--------|-----------|----------------------------------------------------------------------------------|
+| `malloc`   | `0x00` | type      | Returns a pointer to `type` bytes of memory. Sets `cr` to 1 on error             |
+| `exit`     | `0x01` |           | Halt the machine                                                                 |
+| `debugger` | `0x02` |           | Breakpoint for debuggers. Behaves like `NOP` in case nothing picks up the signal |
+| `grow`     | `0x03` |           | Doubles the machines memory. Sets `cr` to 1 on error.                            |
 
 Return values of syscalls are pushed onto the stack. Different syscalls may produce different return values.
 

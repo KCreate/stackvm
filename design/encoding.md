@@ -41,10 +41,6 @@ is the register code.
 000 00000
 ^
 |
-|
-|
-|
-|
 +- Register mode
 ```
 
@@ -67,7 +63,6 @@ Instructions are represented as 8 bit values.
 
 ```
 +- Opcode
-|
 |
 v
 00000000
