@@ -31,30 +31,27 @@ at all.
 
 ## Registers
 
-Registers are represented as 8 bit values. The first three bits make up the header, the rest
+Registers are represented as 8 bit values. The first two bits make up the mode, the rest
 is the register code.
 
 ```
-    +- Register code
-    |
-    v
-000 00000
+   +- Register code
+   |
+   v
+00 000000
 ^
 |
-+- Register mode
++- Mode
 ```
 
-Register modes work like this
+Register modes define which part of the register is being accessed. You can target
+the low `dword`, `word` or `byte`.
 
 ```
-000:  00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-001:  00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-010:  00000000 00000000 00000000 00000000
-100:  00000000 00000000
-110:  00000000
-011:                                      00000000 00000000 00000000 00000000
-101:                                      00000000 00000000
-111:                                      00000000
+00: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+01: 00000000 00000000 00000000 00000000
+10: 00000000 00000000
+11: 00000000
 ```
 
 ## Instructions
