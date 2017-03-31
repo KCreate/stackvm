@@ -121,12 +121,13 @@ If a register is surrounded with brackets it's to be interpreted as a pointer.
 
 ## Reading from and writing to registers
 
-| Name     | Arguments         | Description                                                                    |
-|----------|-------------------|--------------------------------------------------------------------------------|
-| `rpush`  | reg               | Push `reg` onto the stack                                                      |
-| `rpop`   | reg, type         | Pop a `type` value from the stack into `reg`                                   |
-| `mov`    | target, source    | Copies `source` into `target`                                                  |
-| `loadi`  | reg, type, value  | Read a `type` value directly from the instruction stream and store it in `reg` |
+| Name     | Arguments         | Description                                    |
+|----------|-------------------|------------------------------------------------|
+| `rpush`  | reg               | Push `reg` onto the stack                      |
+| `rpop`   | reg, type         | Pop a `type` value from the stack into `reg`   |
+| `mov`    | target, source    | Copies `source` into `target`                  |
+| `loadi`  | reg, type, value  | Read an immediate `type` and store it in `reg` |
+| `rst`    | reg               | Reset a register to `0`                        |
 
 ## Integer arithmetic instructions
 
@@ -205,15 +206,15 @@ insufficient size, the machine will crash
 
 ## Jump instructions
 
-| Name    | Arguments   | Description                               |
-|---------|-------------|-------------------------------------------|
-| `jz`    | reg, offset | Jump to `offset` if `reg` is `0`          |
-| `jzr`   | reg, offset | Jump to `[offset]` if `reg` is `0`        |
-| `jmp`   | offset      | Jump to `offset`                          |
-| `jmpr`  | offset      | Jump to `[offset]`                        |
-| `call`  | offset      | Push a stack frame and jump to `offset`   |
-| `callr` | offset      | Push a stack frame and jump to `[offset]` |
-| `ret`   | offset      | Return from the current stack frame       |
+| Name    | Arguments   | Description                                                         |
+|---------|-------------|---------------------------------------------------------------------|
+| `jz`    | offset      | Jump to `offset` if the `zero bit` in the `flags` register is set   |
+| `jzr`   | offset      | Jump to `[offset]` if the `zero bit` in the `flags` register is set |
+| `jmp`   | offset      | Jump to `offset`                                                    |
+| `jmpr`  | offset      | Jump to `[offset]`                                                  |
+| `call`  | offset      | Push a stack frame and jump to `offset`                             |
+| `callr` | offset      | Push a stack frame and jump to `[offset]`                           |
+| `ret`   | offset      | Return from the current stack frame                                 |
 
 ## Miscellaneous instructions
 
