@@ -161,11 +161,11 @@ insufficient size, the machine will crash
 
 | Name  | Arguments | Description                                                                |
 |-------|-----------|----------------------------------------------------------------------------|
-| `cmp` | reg1, reg | Set `cr` to `0` if `reg1` is equal to `reg2`, otherwise `1`                |
-| `lt`  | reg1, reg | Set `cr` to `0` if `reg1` is less than `reg2`, otherwise `1`               |
-| `gt`  | reg1, reg | Set `cr` to `0` if `reg1` is greater than `reg2`, otherwise `1`            |
-| `ult` | reg1, reg | Set `cr` to `0` if `reg1` is less than `reg2` (unsigned), otherwise `1`    |
-| `ugt` | reg1, reg | Set `cr` to `0` if `reg1` is greater than `reg2` (unsigned), otherwise `1` |
+| `cmp` | reg1, reg2 | Set the zero bit of the `flags` register, if the contents of `[reg1]` and `reg[2]` are equal |
+| `lt`  | reg1, reg2 | Set the zero bit of the `flags` register, if `[reg1]` is less than `[reg2]`                  |
+| `gt`  | reg1, reg2 | Set the zero bit of the `flags` register, if `[reg1]` is greater than `[reg2]`               |
+| `ult` | reg1, reg2 | Set the zero bit of the `flags` register, if `[reg1]` is less than `[reg2]` (unsigned)       |
+| `ugt` | reg1, reg2 | Set the zero bit of the `flags` register, if `[reg1]` is greater than `[reg2]` (unsigned)    |
 
 ## Bitwise instructions
 
