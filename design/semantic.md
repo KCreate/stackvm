@@ -183,8 +183,8 @@ insufficient size, the machine will crash
 
 | Name     | Arguments         | Description                                                       |
 |----------|-------------------|-------------------------------------------------------------------|
-| `load`   | type, offset, reg | Read a `type` value from `fp + offset` and store it in `reg`      |
-| `loadr`  | type, offset, reg | Read a `type` value from `fp + [offset]` and store it in `reg`    |
+| `load`   | reg, type, offset | Read a `type` value from `fp + offset` and store it in `reg`      |
+| `loadr`  | reg, type, offset | Read a `type` value from `fp + [offset]` and store it in `reg`    |
 | `pushs`  | type, offset      | Read a `type` value from `fp + offset` and push it onto the stack |
 | `loads`  | type, reg         | Read a `type` value from `fp + [reg]` and push it onto the stack  |
 | `store`  | offset, reg       | Store the contents of `reg` at `fp + offset`                      |
@@ -193,16 +193,16 @@ insufficient size, the machine will crash
 
 | Name      | Arguments            | Description                                                     |
 |-----------|----------------------|-----------------------------------------------------------------|
-| `read`    | type, address, reg   | Read a `type` value from `[address]` and store it in `reg`      |
-| `readc`   | type, address, reg   | Read a `type` value from `address` and store it in `reg`        |
-| `reads`   | type, address, reg   | Read a `type` value from `[address]` and push it onto the stack |
-| `readcs`  | type, address, reg   | Read a `type` value from `address` and push it onto the stack   |
-| `write`   | reg, address         | Write the contents of `reg` to `[address]`                      |
-| `writec`  | reg, address         | Write the contents of `reg` to `address`                        |
-| `writes`  | type, address        | Pop a `type` value from the stack and write it to `[address]`   |
-| `writecs` | type, address        | Pop a `type` value from the stack and write it to `address`     |
-| `copy`    | type, target, source | Copy a `type` value from `[source]` to `[target]`               |
-| `copyc`   | type, target, source | Copy a `type` value from `source` to `target`                   |
+| `read`    | reg, type, address   | Read a `type` value from `[address]` and store it in `reg`      |
+| `readc`   | reg, type, address   | Read a `type` value from `address` and store it in `reg`        |
+| `reads`   | reg, type, address   | Read a `type` value from `[address]` and push it onto the stack |
+| `readcs`  | reg, type, address   | Read a `type` value from `address` and push it onto the stack   |
+| `write`   | address, reg         | Write the contents of `reg` to `[address]`                      |
+| `writec`  | address, reg         | Write the contents of `reg` to `address`                        |
+| `writes`  | address, type        | Pop a `type` value from the stack and write it to `[address]`   |
+| `writecs` | address, type        | Pop a `type` value from the stack and write it to `address`     |
+| `copy`    | target, type, source | Copy a `type` value from `[source]` to `[target]`               |
+| `copyc`   | target, type, source | Copy a `type` value from `source` to `target`                   |
 
 ## Jump instructions
 

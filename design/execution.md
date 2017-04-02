@@ -74,8 +74,8 @@ add:
   rpush r0            ; push r0 onto the stack
   rpush r1            ; push r1 onto the stack
 
-  load qword, -16, r0 ; read qword at fp - 16 into r0
-  load qword, -8, r1  ; read qword at fp - 8 into r1
+  load r0, qword, -16 ; read qword at fp - 16 into r0
+  load r1, qword, -8  ; read qword at fp - 8 into r1
   add r0, r0, r1      ; add r0 and r1 and save into r0
   store -24, r0       ; store r0 at fp - 24
 
