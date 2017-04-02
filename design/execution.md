@@ -59,28 +59,58 @@ The program below calculates the sum of `25` and `45` and saves the result in th
 
 ```assembly
 main:
-  loadi r0, qword, 25 ; load qword 25 into r0
-  loadi r1, qword, 45 ; load qword 45 into r1
+  loadi r0, qword, 25     ; load qword 25 into r0
+  loadi r1, qword, 45     ; load qword 45 into r1
 
-  add sp, sp, 8       ; reserve 8 bytes for the return value
-  rpush r0            ; pushes r0 onto the stack
-  rpush r1            ; pushes r1 onto the stack
+  add sp, sp, 8           ; reserve 8 bytes for the return value
+  rpush r0                ; pushes r0 onto the stack
+  rpush r1                ; pushes r1 onto the stack
 
-  call add            ; calls add using standard calling convention
-  rpop r0, qword      ; pop return value into r0
+  loadi r2d, dword, 16    ; load dword 16 into r2d
+  rpush r2d               ; push r2d onto the stack
+
+  call add                ; calls add using standard calling convention
+  rpop r0, qword          ; pop return value into r0
 
   halt
 add:
-  rpush r0            ; push r0 onto the stack
-  rpush r1            ; push r1 onto the stack
+  rpush r0                ; push r0 onto the stack
+  rpush r1                ; push r1 onto the stack
 
-  load r0, qword, -16 ; read qword at fp - 16 into r0
-  load r1, qword, -8  ; read qword at fp - 8 into r1
-  add r0, r0, r1      ; add r0 and r1 and save into r0
-  store -24, r0       ; store r0 at fp - 24
+  load r0, qword, -20     ; read qword at fp - 16 into r0
+  load r1, qword, -12      ; read qword at fp - 8 into r1
+  add r0, r0, r1          ; add r0 and r1 and save into r0
+  store -24, r0           ; store r0 at fp - 24
 
-  rpop r1, qword      ; restore r1 from the stack
-  rpop r0, qword      ; restore r0 from the stack
+  rpop r1, qword          ; restore r1 from the stack
+  rpop r0, qword          ; restore r0 from the stack
 
   ret
 ```
+
+Below is a diagram of how the stack is organized when entering the `add` block.
+
+```
++- Low addresses
+|
++-----------------------------+
+| Return value : 8 Bytes      | <- Return value
++-----------------------------+
+| Argument 1 : 8 Bytes        | <-- Function arguments
+| Argument 2 : 8 Bytes        | <-/
+| Argument count : 4 Bytes    | <- How many bytes are arguments?
++-----------------------------+
+| Old Frame pointer : 8 Bytes | <- Stack frame
+| Return address : 8 Bytes    |
++-----------------------------+
+|
++- High addresses
+```
+
+The `call` instruction simply pushes the current frame pointer and the address of the next
+instruction. It then updates the `fp` register to point to the address of the previously pushed
+old frame pointer and jumps to the specified address.
+
+The `ret` instruction restores the `fp` register to the value that's inside the current
+stack frame, pops off as many bytes as the argument count specifies and jumps to the return
+address.
