@@ -69,3 +69,7 @@ v
 
 Size specifiers are represented as 32-bit values and are used to denote a given amount of bytes
 in an argument.
+
+## Addresses
+
+Addresses are encoded as 64-bit values.
