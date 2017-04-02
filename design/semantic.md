@@ -24,13 +24,13 @@ For the specification on binary encoding, check the [encoding.md](./encoding.md)
 
 ## Registers
 
-| Name           | Description         | Writeable |
-|----------------|---------------------|-----------|
-| `r0` .. `r59`  | General purpose     | `yes`     |
-| `ip`           | Instruction pointer | `no`      |
-| `sp`           | Stack pointer       | `no`      |
-| `fp`           | Frame pointer       | `no`      |
-| `flags`        | Flags register      | `no`      |
+| Name           | Description         |
+|----------------|---------------------|
+| `r0` .. `r59`  | General purpose     |
+| `ip`           | Instruction pointer |
+| `sp`           | Stack pointer       |
+| `fp`           | Frame pointer       |
+| `flags`        | Flags register      |
 
 - `ip` holds a pointer to the current instruction
 - `sp` holds a pointer to the first byte above the stack
@@ -159,13 +159,13 @@ insufficient size, the machine will crash
 
 ## Comparison instructions
 
-| Name  | Arguments | Description                                                                |
-|-------|-----------|----------------------------------------------------------------------------|
-| `cmp` | reg1, reg2 | Set the zero bit of the `flags` register, if the contents of `[reg1]` and `reg[2]` are equal |
-| `lt`  | reg1, reg2 | Set the zero bit of the `flags` register, if `[reg1]` is less than `[reg2]`                  |
-| `gt`  | reg1, reg2 | Set the zero bit of the `flags` register, if `[reg1]` is greater than `[reg2]`               |
-| `ult` | reg1, reg2 | Set the zero bit of the `flags` register, if `[reg1]` is less than `[reg2]` (unsigned)       |
-| `ugt` | reg1, reg2 | Set the zero bit of the `flags` register, if `[reg1]` is greater than `[reg2]` (unsigned)    |
+| Name  | Arguments  | Description                                                           |
+|-------|------------|-----------------------------------------------------------------------|
+| `cmp` | reg1, reg2 | Set `flags` zero bit, if `[reg1]` and `reg[2]` are equal              |
+| `lt`  | reg1, reg2 | Set `flags` zero bit, if `[reg1]` is less than `[reg2]`               |
+| `gt`  | reg1, reg2 | Set `flags` zero bit, if `[reg1]` is greater than `[reg2]`            |
+| `ult` | reg1, reg2 | Set `flags` zero bit, if `[reg1]` is less than `[reg2]` (unsigned)    |
+| `ugt` | reg1, reg2 | Set `flags` zero bit, if `[reg1]` is greater than `[reg2]` (unsigned) |
 
 ## Bitwise instructions
 
@@ -226,17 +226,16 @@ insufficient size, the machine will crash
 ## Syscalls
 
 Syscalls are subroutines implemented directly inside the machine that provide some useful functionality,
-such as doing IO or getting input from the user. To make a syscall, push any arguments first and the syscall id
-onto the stack. The syscall id is a `word`.
+such as doing IO or getting input from the user. To make a syscall, push any arguments first and the
+syscall id onto the stack. The syscall id is a `word`.
 
 ### Available syscalls
 
-| Name       | Opcode | Arguments | Description                                                                      |
-|------------|--------|-----------|----------------------------------------------------------------------------------|
-| `malloc`   | `0x00` | type      | Returns a pointer to `type` bytes of memory. Pushes `0_u32` on error             |
-| `exit`     | `0x01` | code      | Halt the machine with `code` as the exit code (single byte)                      |
-| `debugger` | `0x02` | arg       | Breakpoint for debuggers. Behaves like `nop` in case nothing picks up the signal |
-| `grow`     | `0x03` |           | Doubles the machines memory. Pushes `0_u32` on error                             |
+| Name       | Opcode | Arguments | Description                                                 |
+|------------|--------|-----------|-------------------------------------------------------------|
+| `exit`     | `0x00` | code      | Halt the machine with `code` as the exit code (single byte) |
+| `debugger` | `0x01` | arg       | Breakpoint for debuggers.                                   |
+| `grow`     | `0x02` |           | Doubles the machines memory. Pushes `0_u32` on error        |
 
 Return values of syscalls are pushed onto the stack. Different syscalls may produce different return values.
 
