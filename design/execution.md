@@ -4,7 +4,7 @@
 > The virtual machine doesn't have a name yet, but to keep it short,
 we refer to it as `the machine`.
 
-## Default variables
+## Default variables
 
 Below are some variables you are able to pass to the machine in different contexts.
 For example, if you instantiate the machine programmatically, you will be able to pass
