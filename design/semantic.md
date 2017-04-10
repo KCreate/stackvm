@@ -14,12 +14,12 @@ For the specification on binary encoding, check the [encoding.md](./encoding.md)
 | Name                    | Value  | Description                                                       |
 |-------------------------|--------|-------------------------------------------------------------------|
 | `REGULAR_EXIT`          | `0x00` | The machine exited normally                                       |
-| `STACKOVERFLOW`         | `0x01` | Operation would overflow the stack                                |
-| `ILLEGAL_MEMORY_ACCESS` | `0x03` | Memory read or write is out-of-bounds                             |
-| `INVALID_INSTRUCTION`   | `0x04` | Unknown instruction                                               |
-| `INVALID_REGISTER`      | `0x05` | Unknown register                                                  |
-| `INVALID_JUMP`          | `0x06` | Trying to jump to an address that's out of bounds                 |
-| `OUT_OF_MEMORY`         | `0x07` | Not enough memory to load a program                               |
+| `ILLEGAL_MEMORY_ACCESS` | `0x01` | Memory read or write is out-of-bounds                             |
+| `BAD_REGISTER_ACCESS`   | `0x02` | Bad register access (e.g too small)                               |
+| `INVALID_INSTRUCTION`   | `0x03` | Unknown instruction                                               |
+| `INVALID_REGISTER`      | `0x04` | Unknown register                                                  |
+| `INVALID_JUMP`          | `0x05` | Trying to jump to an address that's out of bounds                 |
+| `OUT_OF_MEMORY`         | `0x06` | Not enough memory to load a program                               |
 
 ## Registers
 

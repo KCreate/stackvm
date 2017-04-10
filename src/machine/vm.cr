@@ -304,6 +304,11 @@ module VM
     end
 
     # :nodoc:
+    private def bad_register_access(register : Register)
+      raise Error.new ErrorCode::BAD_REGISTER_ACCESS, "Bad register access: #{register}"
+    end
+
+    # :nodoc:
     private def invalid_register_access(register : Register)
       raise Error.new ErrorCode::INVALID_REGISTER, "Unknown register: #{register}"
     end
