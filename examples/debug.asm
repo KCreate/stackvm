@@ -1,6 +1,4 @@
 main:
-  push qword, 0
-  mov fp, sp
+  readcs qword, myconstant
 
-  loadi r0, qword, 25
-  store -8, r0
+.myconstant qword 500

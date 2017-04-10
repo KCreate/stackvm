@@ -131,6 +131,14 @@ module VM
         op_store ip
       when Opcode::PUSH
         op_push ip
+      when Opcode::READ
+        op_read ip
+      when Opcode::READC
+        op_readc ip
+      when Opcode::READS
+        op_reads ip
+      when Opcode::READCS
+        op_readcs ip
       else
         invalid_instruction instruction
       end
@@ -465,6 +473,56 @@ module VM
     private def op_push(ip)
       size = mem_read UInt32, ip + 1
       value = mem_read size, ip + 5
+      stack_write value
+    end
+
+    # Executes a read instruction
+    #
+    # ```
+    # read r0, r1
+    # ```
+    private def op_read(ip)
+      target = Register.new mem_read(UInt8, ip + 1)
+      source = Register.new mem_read(UInt8, ip + 2)
+      address = reg_read UInt64, source
+      value = mem_read target.bytecount, address
+      reg_write target, value
+    end
+
+    # Executes a readc instruction
+    #
+    # ```
+    # readc r0, 0x500
+    # ```
+    private def op_readc(ip)
+      target = Register.new mem_read(UInt8, ip + 1)
+      address = mem_read UInt64, ip + 2
+      value = mem_read target.bytecount,address
+      reg_write target, value
+    end
+
+    # Executes a reads instruction
+    #
+    # ```
+    # reads qword, r0
+    # ```
+    private def op_reads(ip)
+      size = mem_read UInt32, ip + 1
+      source = Register.new mem_read(UInt8, ip + 2)
+      address = reg_read UInt64, source
+      value = mem_read size, address
+      stack_write value
+    end
+
+    # Executes a readcs instruction
+    #
+    # ```
+    # readcs qword, 0x500
+    # ```
+    private def op_readcs(ip)
+      size = mem_read UInt32, ip + 1
+      address = mem_read UInt64, ip + 5
+      value = mem_read size, address
       stack_write value
     end
   end
