@@ -155,6 +155,10 @@ module VM
         op_jz ip
       when Opcode::JZR
         op_jzr ip
+      when Opcode::JMP
+        op_jmp ip
+      when Opcode::JMPR
+        op_jmpr ip
       else
         invalid_instruction instruction
       end
@@ -648,6 +652,29 @@ module VM
       flags = reg_read UInt8, Register::FLAGS.byte
       zero = flags & Flag::ZERO.value
       reg_write Register::IP, address if zero != 0
+    end
+
+    # Executes a jmp instruction
+    #
+    # ```
+    # jmp myfunction
+    # ```
+    private def op_jmp(ip)
+      address = mem_read UInt64, ip + 1
+      reg_write Register::IP, address
+    end
+
+    # Executes a jmpr instruction
+    #
+    # ```
+    # jmpr r0
+    #      ^
+    #      +- Contains the target address
+    # ```
+    private def op_jmpr(ip)
+      target = Register.new mem_read(UInt8, ip + 1)
+      address = reg_read UInt64, target
+      reg_write Register::IP, address
     end
   end
 
