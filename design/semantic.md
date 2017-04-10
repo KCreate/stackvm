@@ -192,8 +192,8 @@ insufficient size, the result will be truncated.
 
 | Name      | Arguments            | Description                                                     |
 |-----------|----------------------|-----------------------------------------------------------------|
-| `read`    | reg, type, address   | Read a `type` value from `[address]` and store it in `reg`      |
-| `readc`   | reg, type, address   | Read a `type` value from `address` and store it in `reg`        |
+| `read`    | reg, address         | Read `reg.size` bytes at `[address]` and store in `reg`         |
+| `readc`   | reg, address         | Read `reg.size` bytes at `address` and store in `reg`           |
 | `reads`   | type, address        | Read a `type` value from `[address]` and push it onto the stack |
 | `readcs`  | type, address        | Read a `type` value from `address` and push it onto the stack   |
 | `write`   | address, reg         | Write the contents of `reg` to `[address]`                      |
