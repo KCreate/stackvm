@@ -301,9 +301,13 @@ module VM
 
     # :nodoc:
     private def illegal_memory_access(address)
+      ip = reg_read UInt64, Register::IP
+      ip = ("0x" + (ip.to_s(16).rjust(8, '0'))).colorize :red
+      address = ("0x" + (address.to_s(16).rjust(8, '0'))).colorize :yellow
+
       raise Error.new(
         ErrorCode::ILLEGAL_MEMORY_ACCESS,
-        "Illegal memory access at 0x#{address.to_s(16).rjust(8, '0')}"
+        "#{ip}: Illegal memory access at #{address} (memory size: #{@memory.size} bytes)"
       )
     end
 
