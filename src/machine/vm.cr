@@ -194,7 +194,11 @@ module VM
     def reg_read(x : T.class, reg : Register) forall T
       invalid_register_access reg unless legal_reg reg
       source = @regs[reg.regcode.to_i64 * 8, reg.bytecount]
-      ptr = Pointer(T).new source.to_unsafe.address
+
+      # Zero pad values smaller than 8 bytes
+      bytes = Bytes.new 8
+      bytes.copy_from source
+      ptr = Pointer(T).new bytes.to_unsafe.address
       ptr[0]
     end
 
