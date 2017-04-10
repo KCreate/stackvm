@@ -57,8 +57,6 @@ module VM
         @machine.cycle n
       when "r", "registers"
         print_registers
-      when "start"
-        @machine.running = true
       when "drain"
         @draining = true
         @machine.start
@@ -217,8 +215,9 @@ module VM
       e, exdump                          dump the executable
       m, memory       start, count       print *count* bytes starting at *start*
       status                             print machine status information
-      start                              start the machine again after it stopped
       drain                              run the machine in normal mode
+                                           breaks when the debugger receives a signal or
+                                           the machine terminates (syscall exit)
       HELP
     end
 
