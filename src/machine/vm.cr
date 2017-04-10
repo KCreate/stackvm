@@ -143,6 +143,10 @@ module VM
         op_write ip
       when Opcode::WRITEC
         op_writec ip
+      when Opcode::WRITES
+        op_writes ip
+      when Opcode::WRITECS
+        op_writecs ip
       else
         invalid_instruction instruction
       end
@@ -552,6 +556,31 @@ module VM
       address = mem_read UInt64, ip + 1
       source = Register.new mem_read(UInt8, ip + 9)
       value = reg_read source
+      mem_write address, value
+    end
+
+    # Executes a writes instruction
+    #
+    # ```
+    # writes r0, qword
+    # ```
+    private def op_writes(ip)
+      target = Register.new mem_read(UInt8, ip + 1)
+      address = reg_read UInt64, target
+      size = mem_read UInt32, ip + 2
+      value = stack_pop size
+      mem_write address, value
+    end
+
+    # Executes a writecs instruction
+    #
+    # ```
+    # writecs 0x500, qword
+    # ```
+    private def op_writecs(ip)
+      address = mem_read UInt64, ip + 1
+      size = mem_read UInt32, ip + 9
+      value = stack_pop size
       mem_write address, value
     end
   end

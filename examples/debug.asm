@@ -1,9 +1,14 @@
 main:
-  loadi r0, qword, 127
-  loadi r1, qword, myqword
-  write r1, r0
 
-  loadi r0, qword, 255
-  writec myqword, r0
+  ; prepare stack
+  push byte, 255
+  push byte, 127
 
-.myqword qword 0
+  ; write to constants
+  loadi r0, qword, byte1
+  writes r0, byte
+
+  writecs byte2, byte
+
+.byte1 byte 0
+.byte2 byte 0
