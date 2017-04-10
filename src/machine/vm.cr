@@ -159,6 +159,10 @@ module VM
         op_jmp ip
       when Opcode::JMPR
         op_jmpr ip
+      when Opcode::CALL
+        op_call ip
+      when Opcode::CALLR
+        op_callr ip
       else
         invalid_instruction instruction
       end
@@ -674,6 +678,65 @@ module VM
     private def op_jmpr(ip)
       target = Register.new mem_read(UInt8, ip + 1)
       address = reg_read UInt64, target
+      reg_write Register::IP, address
+    end
+
+    # Executes a call instruction
+    #
+    # ```
+    # push qword, 0     ; allocate space for return value
+    # push qword, 1     ; argument 1
+    # push qword, 2     ; argument 2
+    # push dword, 16    ; argument bytecount
+    # call myfunction
+    # ```
+    private def op_call(ip)
+      address = mem_read UInt64, ip + 1
+      frameptr = reg_read UInt64, Register::FP
+      return_address = ip + decode_instruction_length(fetch)
+
+      # Base address of this stack frame
+      # Is a pointer to a qword which will later
+      # be populated with the old frame pointer
+      stack_frame_baseadr = reg_read UInt64, Register::SP
+
+      # Push the new stack frame
+      stack_write frameptr
+      stack_write return_address
+
+      # Update FP and IP
+      reg_write Register::FP, stack_frame_baseadr
+      reg_write Register::IP, address
+    end
+
+    # Executes a callr instruction
+    #
+    # ```
+    # push qword, 0     ; allocate space for return value
+    # push qword, 1     ; argument 1
+    # push qword, 2     ; argument 2
+    # push dword, 16    ; argument bytecount
+    #
+    # loadi r0, qword, myfunction
+    # call r0
+    # ```
+    private def op_callr(ip)
+      target = Register.new mem_read(UInt8, ip + 1)
+      address = reg_read UInt64, target
+      frameptr = reg_read UInt64, Register::FP
+      return_address = ip + decode_instruction_length(fetch)
+
+      # Base address of this stack frame
+      # Is a pointer to a qword which will later
+      # be populated with the old frame pointer
+      stack_frame_baseadr = reg_read UInt64, Register::SP
+
+      # Push the new stack frame
+      stack_write frameptr
+      stack_write return_address
+
+      # Update FP and IP
+      reg_write Register::FP, stack_frame_baseadr
       reg_write Register::IP, address
     end
   end
