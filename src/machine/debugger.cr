@@ -8,11 +8,15 @@ module VM
   class Debugger
     property machine : Machine
 
+    # Wether the machine is running freely
+    # or if the cycles are controlled by the debugger
+    property draining : Bool
+
     def initialize(@machine)
-      @machine.running = true
       @machine.debugger_signal do |arg|
         handle_debugger_signal arg
       end
+      @draining = false
     end
 
     # Start the debugger
@@ -53,6 +57,11 @@ module VM
         @machine.cycle n
       when "r", "registers"
         print_registers
+      when "start"
+        @machine.running = true
+      when "drain"
+        @draining = true
+        @machine.start
       when "m", "memory"
         start = args.shift?
         count = args.shift?
@@ -97,7 +106,11 @@ module VM
 
     # Handles a signal sent by the machine
     private def handle_debugger_signal(arg)
-      puts "received #{arg} from the machine"
+      puts "received #{arg} from machine"
+      if @draining
+        @draining = false
+        @machine.running = false
+      end
     end
 
     # Prints the stack
@@ -204,6 +217,8 @@ module VM
       e, exdump                          dump the executable
       m, memory       start, count       print *count* bytes starting at *start*
       status                             print machine status information
+      start                              start the machine again after it stopped
+      drain                              run the machine in normal mode
       HELP
     end
 
