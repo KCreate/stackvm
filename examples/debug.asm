@@ -1,14 +1,14 @@
 main:
 
-  ; prepare stack
-  push byte, 255
-  push byte, 127
+  ; prepare registers for copy call
+  loadi r0, qword, source1
+  loadi r1, qword, target1
+  copy r1, qword, r0
 
-  ; write to constants
-  loadi r0, qword, byte1
-  writes r0, byte
+  copyc target2, qword, source2
 
-  writecs byte2, byte
+.source1 qword 255
+.target1 qword 0
 
-.byte1 byte 0
-.byte2 byte 0
+.source2 qword 255
+.target2 qword 0

@@ -147,6 +147,10 @@ module VM
         op_writes ip
       when Opcode::WRITECS
         op_writecs ip
+      when Opcode::COPY
+        op_copy ip
+      when Opcode::COPYC
+        op_copyc ip
       else
         invalid_instruction instruction
       end
@@ -582,6 +586,37 @@ module VM
       size = mem_read UInt32, ip + 9
       value = stack_pop size
       mem_write address, value
+    end
+
+    # Executes a copy instruction
+    #
+    # ```
+    # copy r0, qword, r1
+    #      ^          ^
+    #      |          +- Source
+    #      +- Target
+    # ```
+    private def op_copy(ip)
+      target = Register.new mem_read(UInt8, ip + 1)
+      size = mem_read UInt32, ip + 2
+      source = Register.new mem_read(UInt8, ip + 6)
+      target_adr = reg_read UInt64, target
+      source_adr = reg_read UInt64, source
+      value = mem_read size, source_adr
+      mem_write target_adr, value
+    end
+
+    # Executes a copyc instruction
+    #
+    # ```
+    # copyc target, qword, source
+    # ```
+    private def op_copyc(ip)
+      target = mem_read(UInt64, ip + 1)
+      size = mem_read UInt32, ip + 9
+      source = mem_read(UInt64, ip + 13)
+      value = mem_read size, source
+      mem_write target, value
     end
   end
 
