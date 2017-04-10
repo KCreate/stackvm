@@ -165,6 +165,8 @@ module VM
         op_callr ip
       when Opcode::RET
         op_ret ip
+      when Opcode::NOP
+        return
       else
         invalid_instruction instruction
       end
