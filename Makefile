@@ -8,6 +8,10 @@ run: stackvm
 	bin/stackvm build examples/debug.asm -o debug.bc
 	bin/stackvm run debug.bc --memory=100
 
+stackvm_release:
+	mkdir -p bin
+	crystal build src/stackvm.cr -o bin/stackvm --error-trace --no-debug --release
+
 stackvm:
 	mkdir -p bin
 	crystal build src/stackvm.cr -o bin/stackvm --error-trace
