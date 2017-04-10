@@ -1,14 +1,18 @@
 main:
+  loadi flagsb, byte, 4
+  jz myfunction
+  nop
+  nop
+  nop
 
-  ; prepare registers for copy call
-  loadi r0, qword, source1
-  loadi r1, qword, target1
-  copy r1, qword, r0
+myfunction:
+  loadi r0, qword, 255
 
-  copyc target2, qword, source2
+  loadi r2, qword, myotherfunction
+  jzr r2
+  nop
+  nop
+  nop
 
-.source1 qword 255
-.target1 qword 0
-
-.source2 qword 255
-.target2 qword 0
+myotherfunction:
+  loadi r1, qword, 255

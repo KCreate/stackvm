@@ -151,6 +151,10 @@ module VM
         op_copy ip
       when Opcode::COPYC
         op_copyc ip
+      when Opcode::JZ
+        op_jz ip
+      when Opcode::JZR
+        op_jzr ip
       else
         invalid_instruction instruction
       end
@@ -617,6 +621,33 @@ module VM
       source = mem_read(UInt64, ip + 13)
       value = mem_read size, source
       mem_write target, value
+    end
+
+    # Executes a jz instruction
+    #
+    # ```
+    # jz myfunction
+    # ```
+    private def op_jz(ip)
+      address = mem_read UInt64, ip + 1
+      flags = reg_read UInt8, Register::FLAGS.byte
+      zero = flags & Flag::ZERO.value
+      reg_write Register::IP, address if zero != 0
+    end
+
+    # Executes a jzr instruction
+    #
+    # ```
+    # jzr r0
+    #     ^
+    #     +- Contains the target address
+    # ```
+    private def op_jzr(ip)
+      target = Register.new mem_read(UInt8, ip + 1)
+      address = reg_read UInt64, target
+      flags = reg_read UInt8, Register::FLAGS.byte
+      zero = flags & Flag::ZERO.value
+      reg_write Register::IP, address if zero != 0
     end
   end
 
