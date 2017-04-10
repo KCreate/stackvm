@@ -10,12 +10,19 @@ module VM
     property regs : Bytes
     property executable_size : Int64
     property running : Bool
+    property debugger_signal : Proc(Void)?
 
     def initialize(memory_size = MEMORY_SIZE)
       @executable_size = 0_i64
       @memory = Bytes.new memory_size
       @regs = Bytes.new 64 * 8 # 64 registers of 8 bytes each
       @running = false
+      @debugger_signal = nil
+    end
+
+    # Set the machines debugger signal handler
+    def debugger_signal(&block)
+      @debugger_signal = block
     end
 
     # Resets and copies *data* into the machine's memory
@@ -167,6 +174,8 @@ module VM
         op_ret ip
       when Opcode::NOP
         return
+      when Opcode::SYSCALL
+        op_syscall ip
       else
         invalid_instruction instruction
       end
@@ -319,7 +328,9 @@ module VM
       sp = reg_read UInt64, Register::SP
       size = sizeof(T)
       address = sp - size
-      ptr = @memory[address, size].to_unsafe.as(T)
+      ptr = @memory[address, size].to_unsafe
+      adr = ptr.address
+      ptr = Pointer(T).new adr
       value = ptr[0]
       reg_write Register::SP, sp - size
       value
@@ -358,8 +369,13 @@ module VM
     end
 
     # :nodoc:
-    private def invalid_instruction(instruction)
+    private def invalid_instruction(instruction : Opcode)
       raise Error.new ErrorCode::INVALID_INSTRUCTION, "Unknown instruction: #{instruction}"
+    end
+
+    # :nodoc:
+    private def invalid_syscall(syscall : Syscall)
+      raise Error.new ErrorCode::INVALID_SYSCALL, "Unknown sycall: #{syscall}"
     end
 
     # Executes a rpush instruction
@@ -762,6 +778,34 @@ module VM
       reg_write Register::SP, stack_pointer
       reg_write Register::FP, frame_pointer
       reg_write Register::IP, return_address
+    end
+
+    # Executes a syscall instruction
+    #
+    # ```
+    # push byte, 0 ; exit code
+    # push word, 0 ; syscall id
+    # syscall
+    # ```
+    private def op_syscall(ip)
+      id = Syscall.new stack_pop UInt16
+      perform_syscall id, reg_read(UInt64, Register::SP)
+    end
+
+    # Syscall router
+    private def perform_syscall(id : Syscall, stackptr : UInt64)
+      case id
+      when Syscall::EXIT
+        @running = false
+      when Syscall::DEBUGGER
+        @debugger_signal.try &.call
+      when Syscall::GROW
+        new_memory = Bytes.new @memory.size * 2
+        new_memory.copy_from @memory
+        @memory = new_memory
+      else
+        invalid_syscall id
+      end
     end
   end
 

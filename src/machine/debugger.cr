@@ -9,6 +9,10 @@ module VM
     property machine : Machine
 
     def initialize(@machine)
+      @machine.running = true
+      @machine.debugger_signal do
+        handle_debugger_signal
+      end
     end
 
     # Start the debugger
@@ -87,6 +91,11 @@ module VM
       else
         error "unknown command: #{name}"
       end
+    end
+
+    # Handles a signal sent by the machine
+    private def handle_debugger_signal
+      puts "received a debugger signal from the machine"
     end
 
     # Prints the stack
