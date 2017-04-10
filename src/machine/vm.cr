@@ -163,6 +163,8 @@ module VM
         op_call ip
       when Opcode::CALLR
         op_callr ip
+      when Opcode::RET
+        op_ret ip
       else
         invalid_instruction instruction
       end
@@ -738,6 +740,26 @@ module VM
       # Update FP and IP
       reg_write Register::FP, stack_frame_baseadr
       reg_write Register::IP, address
+    end
+
+    # Executes a ret instruction
+    #
+    # ```
+    # ret
+    # ```
+    private def op_ret(ip)
+
+      # Read current stack frame
+      stack_frame_baseadr = reg_read UInt64, Register::FP
+      frame_pointer = mem_read UInt64, stack_frame_baseadr
+      return_address = mem_read UInt64, stack_frame_baseadr + 8
+      argument_count = mem_read UInt32, stack_frame_baseadr - 4
+      stack_pointer = stack_frame_baseadr - (4 + argument_count)
+
+      # Restore old state
+      reg_write Register::SP, stack_pointer
+      reg_write Register::FP, frame_pointer
+      reg_write Register::IP, return_address
     end
   end
 
