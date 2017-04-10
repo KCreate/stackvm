@@ -44,6 +44,8 @@ module VM
         print_stack
       when "e", "exdump"
         print_executable
+      when "status"
+        print_status
       when "c", "cycle"
         n = args.shift? || "1"
         n = n.to_i32?
@@ -168,6 +170,26 @@ module VM
       STDOUT.flush
     end
 
+    # Prints machine status information
+    private def print_status
+      ip = @machine.reg_read UInt64, Register::IP
+      ip = render_hex ip, 16, :yellow
+      sp = @machine.reg_read UInt64, Register::SP
+      sp = render_hex sp, 16, :yellow
+      fp = @machine.reg_read UInt64, Register::FP
+      fp = render_hex fp, 16, :yellow
+      memory_size = @machine.memory.size
+      memory_size = render_hex memory_size, 16, :yellow
+
+      puts <<-STATUS
+        instruction pointer: #{ip}
+        stack pointer:       #{sp}
+        frame pointer:       #{fp}
+        memory_size:         #{memory_size}
+        running:             #{@machine.running}
+      STATUS
+    end
+
     # Prints the help message
     private def print_help
       puts <<-HELP
@@ -181,6 +203,7 @@ module VM
       j, jump         adr                jumps to *adr*
       e, exdump                          dump the executable
       m, memory       start, count       print *count* bytes starting at *start*
+      status                             print machine status information
       HELP
     end
 
@@ -188,7 +211,9 @@ module VM
     private def prompt
       address = render_hex @machine.reg_read(UInt64, Register::IP), 8, :red
       frameptr = render_hex @machine.reg_read(UInt64, Register::FP), 8, :green
-      "[#{frameptr}:#{address}]> "
+      running = render_hex((@machine.running ? 1 : 0), 1, :magenta)
+
+      "[#{running}:#{frameptr}:#{address}]> "
     end
 
     # Pretty print a number in hexadecimal
