@@ -120,9 +120,9 @@ module Constants
     10, # store
     0, # push (this is calculated in the vm itself)
 
-    7, # read
-    14, # readc
-    14, # reads
+    3, # read
+    10, # readc
+    6, # reads
     13, # readcs
     3, # write
     10, # writec
