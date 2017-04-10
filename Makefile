@@ -2,11 +2,11 @@ FILE = "spec/data/debug.bc"
 
 debug: stackvm
 	bin/stackvm build examples/debug.asm -o debug.bc
-	bin/stackvm run debug.bc --memory=100 --debugger
+	bin/stackvm run debug.bc --memory=10000 --debugger
 
 run: stackvm
 	bin/stackvm build examples/debug.asm -o debug.bc
-	bin/stackvm run debug.bc --memory=100
+	bin/stackvm run debug.bc --memory=10000
 
 stackvm_release:
 	mkdir -p bin
