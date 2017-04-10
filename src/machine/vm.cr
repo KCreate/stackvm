@@ -10,7 +10,7 @@ module VM
     property regs : Bytes
     property executable_size : Int64
     property running : Bool
-    property debugger_signal : Proc(Void)?
+    property debugger_signal : Proc(UInt64, Void)?
 
     def initialize(memory_size = MEMORY_SIZE)
       @executable_size = 0_i64
@@ -21,7 +21,7 @@ module VM
     end
 
     # Set the machines debugger signal handler
-    def debugger_signal(&block)
+    def debugger_signal(&block : Proc(UInt64, Void))
       @debugger_signal = block
     end
 
@@ -796,13 +796,14 @@ module VM
     private def perform_syscall(id : Syscall, stackptr : UInt64)
       case id
       when Syscall::EXIT
+        exit_code = stack_pop UInt8
+        reg_write Register::R0, exit_code
         @running = false
       when Syscall::DEBUGGER
-        @debugger_signal.try &.call
+        argument = stack_pop UInt64
+        @debugger_signal.try &.call(argument)
       when Syscall::GROW
-        new_memory = Bytes.new @memory.size * 2
-        new_memory.copy_from @memory
-        @memory = new_memory
+        grow @memory.size * 2
       else
         invalid_syscall id
       end
