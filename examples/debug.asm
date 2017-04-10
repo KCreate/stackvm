@@ -1,4 +1,4 @@
 main:
-  readcs qword, myconstant
+  readcs 13, instr
 
-.myconstant qword 500
+.instr 13 [ 39, 0, 0, 0, 0, 13, 0, 0, 0, 0, 0, 0, 0 ]
