@@ -47,6 +47,21 @@ module VM
         @machine.cycle n
       when "r", "registers"
         print_registers
+      when "m", "memory"
+        start = args.shift?
+        count = args.shift?
+
+        unless start && count
+          return error "no start or count argument passed"
+        end
+
+        start = start.to_i32?(prefix: true)
+        count = count.to_i32?(prefix: true)
+
+        return error "bad start addresss" unless start
+        return error "bad count argument" unless count
+
+        print_memory start, count
       when "j", "jump"
         if args.size == 0
           return error "jump needs an address"
@@ -81,6 +96,19 @@ module VM
       size = sp - base
       memory = @machine.memory[base, size]
       puts memory.hexdump
+    end
+
+    # Prints *count* bytes starting at *start*
+    private def print_memory(start, count)
+
+      # check enough memory
+      if start + count > @machine.memory.size - 1
+        address = render_hex start, 16, :yellow
+        return error "could not read #{count} bytes at #{address}"
+      end
+
+      bytes = @machine.memory[start, count]
+      puts bytes.hexdump
     end
 
     # Prints the executable
@@ -136,14 +164,14 @@ module VM
       puts <<-HELP
       Debugger help page
 
-      | name      | args | description                    |
-      |-----------|------|--------------------------------|
-      | h, help   |      | show this page                 |
-      | q, quit   |      | quit the debugger              |
-      | s, stack  |      | print a hexdump of the stack   |
-      | c, cycle  | n    | run *n* cpu cycles (default 1) |
-      | j, jump   | adr  | jumps to *adr*                 |
-      | e, exdump |      | dump the executable            |
+      h, help                            show this page
+      q, quit                            quit the debugger
+      s, stack                           print a hexdump of the stack
+      r, registers                       print the contents of all registers
+      c, cycle        n                  run *n* cpu cycles (default 1)
+      j, jump         adr                jumps to *adr*
+      e, exdump                          dump the executable
+      m, memory       start, count       print *count* bytes starting at *start*
       HELP
     end
 
