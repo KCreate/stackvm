@@ -233,8 +233,8 @@ syscall id onto the stack. The syscall id is a `word`.
 | Name       | Opcode | Arguments | Description                                                 |
 |------------|--------|-----------|-------------------------------------------------------------|
 | `exit`     | `0x00` | code      | Halt the machine with `code` as the exit code (single byte) |
-| `debugger` | `0x01` | arg       | Breakpoint for debuggers.                                   |
-| `grow`     | `0x02` |           | Doubles the machines memory. Pushes `0_u32` on error        |
+| `debugger` | `0x01` | arg       | Breakpoint for debuggers. `arg` is a `qword` value          |
+| `grow`     | `0x02` |           | Doubles the machines memory.                                |
 
 Return values of syscalls are pushed onto the stack. Different syscalls may produce different return values.
 

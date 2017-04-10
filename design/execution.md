@@ -106,3 +106,7 @@ old frame pointer and jumps to the specified address.
 The `ret` instruction restores the `fp` register to the value that's inside the current
 stack frame, pops off as many bytes as the argument count specifies and jumps to the return
 address.
+
+## Syscalls
+
+The `exit` syscall stops the machine's execution and stores the exit code in the `r0` register.
