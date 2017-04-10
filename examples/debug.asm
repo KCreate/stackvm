@@ -1,4 +1,9 @@
 main:
-  readcs 13, instr
+  loadi r0, qword, 127
+  loadi r1, qword, myqword
+  write r1, r0
 
-.instr 13 [ 39, 0, 0, 0, 0, 13, 0, 0, 0, 0, 0, 0, 0 ]
+  loadi r0, qword, 255
+  writec myqword, r0
+
+.myqword qword 0
