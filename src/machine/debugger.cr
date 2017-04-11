@@ -57,6 +57,8 @@ module VM
         @machine.cycle n
       when "r", "registers"
         print_registers
+      when "i", "instruction"
+        print_instruction
       when "drain"
         @draining = true
         @machine.start
@@ -109,6 +111,11 @@ module VM
         @draining = false
         @machine.running = false
       end
+    end
+
+    # Prints the current instruction
+    private def print_instruction
+      puts "Current instruction: #{@machine.fetch}"
     end
 
     # Prints the stack
@@ -214,6 +221,7 @@ module VM
       j, jump         adr                jumps to *adr*
       e, exdump                          dump the executable
       m, memory       start, count       print *count* bytes starting at *start*
+      i, instruction                     print the current instruction
       status                             print machine status information
       drain                              run the machine in normal mode
                                            breaks when the debugger receives a signal or
