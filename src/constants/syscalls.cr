@@ -4,6 +4,7 @@ module Constants
     EXIT
     DEBUGGER
     GROW
+    SLEEP
   end
 
 end

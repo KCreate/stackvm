@@ -864,6 +864,10 @@ module VM
         @debugger_signal.try &.call(argument)
       when Syscall::GROW
         grow @memory.size * 2
+      when Syscall::SLEEP
+        millis = stack_pop UInt32
+        millis = millis.to_f64
+        sleep millis / 1000
       else
         invalid_syscall id
       end
