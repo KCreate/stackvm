@@ -129,7 +129,7 @@ module Constants
     6, # writes
     13, # writecs
     7, # copy
-    11, # copyc
+    21, # copyc
 
     9, # jz
     2, # jzr
