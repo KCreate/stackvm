@@ -126,6 +126,20 @@ module VM
         op_loadi ip
       when Opcode::RST
         op_rst ip
+      when Opcode::ADD
+        op_add ip
+      when Opcode::SUB
+        op_sub ip
+      when Opcode::MUL
+        op_mul ip
+      when Opcode::DIV
+        op_div ip
+      when Opcode::IDIV
+        op_idiv ip
+      when Opcode::REM
+        op_rem ip
+      when Opcode::IREM
+        op_irem ip
       when Opcode::LOAD
         op_load ip
       when Opcode::LOADR
@@ -433,6 +447,52 @@ module VM
     private def op_rst(ip)
       reg = Register.new mem_read(UInt8, ip + 1)
       reg_write reg, 0
+    end
+
+    # Macro to reduce duplicate code for some operators
+    private macro impl_operator(name, operator)
+      private def op_{{name}}(ip)
+        target = Register.new mem_read(UInt8, ip + 1)
+        left = Register.new mem_read(UInt8, ip + 2)
+        right = Register.new mem_read(UInt8, ip + 3)
+        left = reg_read UInt64, left
+        right = reg_read UInt64, right
+        reg_write target, left {{operator.id}} right
+      end
+    end
+
+    impl_operator add, :+
+    impl_operator sub, :-
+    impl_operator mul, :*
+    impl_operator div, :/
+    impl_operator rem, :%
+
+    # Executes a idiv instruction
+    #
+    # ```
+    # idiv r0, r0, r1
+    # ```
+    private def op_idiv(ip)
+      target = Register.new mem_read(UInt8, ip + 1)
+      left = Register.new mem_read(UInt8, ip + 2)
+      right = Register.new mem_read(UInt8, ip + 3)
+      left = reg_read Int64, left
+      right = reg_read Int64, right
+      reg_write target, left / right
+    end
+
+    # Executes a irem instruction
+    #
+    # ```
+    # irem r0, r0, r1
+    # ```
+    private def op_irem(ip)
+      target = Register.new mem_read(UInt8, ip + 1)
+      left = Register.new mem_read(UInt8, ip + 2)
+      right = Register.new mem_read(UInt8, ip + 3)
+      left = reg_read Int64, left
+      right = reg_read Int64, right
+      reg_write target, left % right
     end
 
     # Executes a load instruction
