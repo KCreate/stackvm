@@ -93,6 +93,7 @@ module StackVM
         dbg.start
       else
         machine.start
+        machine.clean
       end
     end
 

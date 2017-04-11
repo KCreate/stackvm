@@ -14,10 +14,42 @@ module VM
 
     def initialize(memory_size = MEMORY_SIZE)
       @executable_size = 0_i64
-      @memory = Bytes.new memory_size
+      @memory = Machine.get_shared_memory_region "machine.memory", memory_size
       @regs = Bytes.new 64 * 8 # 64 registers of 8 bytes each
       @running = false
       @debugger_signal = nil
+    end
+
+    # Returns a new shared memory region for *filename* and *size*
+    #
+    # Tries to create the file
+    protected def self.get_shared_memory_region(filename, size)
+      file = File.open filename, "w+" rescue nil
+
+      unless file
+        raise "could not open file: #{filename}"
+      end
+
+      file.write Bytes.new size
+      file.flush
+
+      # map the file into memory
+      ptr = LibC.mmap(nil, size, LibC::PROT_READ | LibC::PROT_WRITE, LibC::MAP_SHARED, file.fd, 0)
+
+      # check if the file could be mapped
+      if ptr == Pointer(Void).new -1
+        raise "could not map #{filename} into memory"
+      end
+
+      ptr = Pointer(UInt8).new ptr.address
+      mapped_memory = Bytes.new ptr, size
+      mapped_memory
+    end
+
+    # Clean all resources the machine created
+    def clean
+      ptr = Pointer(Void).new @memory.to_unsafe.address
+      LibC.munmap(ptr, @memory.size)
     end
 
     # Set the machines debugger signal handler
@@ -61,11 +93,9 @@ module VM
     def grow(size)
       return self if size <= @memory.size
 
-      # Creates a new slice of size *size*
-      # and writes the old memory into it
-      @memory = Bytes.new(size, 0_u8).tap do |mem|
-        @memory.move_to mem
-      end
+      new_mem = Machine.get_shared_memory_region "machine.memory", size
+      @memory.copy_to new_mem
+      @memory = new_mem
 
       self
     end

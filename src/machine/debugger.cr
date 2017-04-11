@@ -37,6 +37,8 @@ module VM
 
         command args.shift, args
       end
+
+      @machine.clean
     end
 
     # Runs *name* with *args*
