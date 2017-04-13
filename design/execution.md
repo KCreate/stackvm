@@ -4,48 +4,53 @@
 > The virtual machine doesn't have a name yet, but to keep it short,
 we refer to it as `the machine`.
 
-## Default variables
+## Memory layout
 
-Below are some variables you are able to pass to the machine in different contexts.
-For example, if you instantiate the machine programmatically, you will be able to pass
-them via a constructor call of some sorts. When launching via a CLI, `ARGV` is used.
-
-| Name              | Type    | Description                                      | Default     |
-|-------------------|---------|--------------------------------------------------|-------------|
-| `MEMORY_SIZE`     | `Int64` | Amount of bytes the machine should allocate      | `1_000_000` |
-| `MAX_MEMORY_SIZE` | `Int64` | Maximum amount of bytes the machine can allocate | `∞`         |
-
-## Startup
-
-On startup, the machine instantiates `$MEMORY_SIZE` amount of bytes. The complete memory is
-zero-initialized. It then copies the contents of the executable file to the memory address `0x00`.
-If the program doesn't fit into memory, the machine will exit with the `OUT_OF_MEMORY` error code.
-
-## Memory alignment
-
-Since the bytecodes are mostly position-dependent, they always start at offset `0x0` and grow towards
-higher addresses. The stack starts immediately after the bytecodes (e.g If you have 25 bytes of instructions,
-the stack starts at address `0x19`).
+The machine has 8 megabytes (8'000'000 bytes) of memory. This results in an address space
+starting at `0x00000000` up to `0x007a1200`. All addresses above that limit will cause a
+crash when accessed.
 
 ```
-+------------------------+ <- 0x0
-| Instructions           |
-+------------------------+ <- Instruction-bytes
-| Stack-memory           |
-+------------------------+
-| Heap-memory (unmanaged)|
-+------------------------+ <- Max. memory size
++--------------------------------+ 0x00000000 : 3,572,754 bytes
+| Unreserved space               |
+| |                              |
+| |                              |
+| v                              |
++--------------------------------+
+| ^                              |
+| |                              |
+| |                              |
+| Stack memory (grows downwards) |
++--------------------------------+ 0x00400000 : 3'767'278 bytes
+| Reserved for machine internals |
++--------------------------------+ 0x00797bee : 16 bytes
+| Interrupt memory               |
++--------------------------------+ 0x00797bfe : 1 byte
+| Interrupt code                 |
++--------------------------------+ 0x00797bff : 1 byte
+| Interrupt status               |
++--------------------------------+ 0x00797c00 : 38,400 bytes
+| VRAM (240x160)                 |
++--------------------------------+ 0x007a1200
 ```
 
 ## Register initialisation
 
-All registers, except `sp` and `fp` will be zero-initialized.
+- `r0` to `r59` are zero-initialized
+- `ip` gets set to the value of the `entry_addr` column in the program header.
+- `sp` is initialized to `0x003fffff`
+- `fp` is intiialized to `0x007a1200`
+- `flags` is zero-intialized
+
+## Stack memory
+
+The stack starts at `0x003fffff` and grows towards lower addresses.
 
 ## Execution loop
 
 The `ip` register always points to the current instruction. If the instruction modified the instruction
-pointer, it won't be incremented. If the instruction pointer wasn't accessed during the execution,
-it will be set to the address of the next instruction.
+pointer, it won't be incremented. If the instruction pointer wasn't changed, it will be set to the
+address of the next instruction.
 
 ## Standard calling convention
 
@@ -58,32 +63,34 @@ Below is an example of how you would call another function.
 The program below calculates the sum of `25` and `45` and saves the result in the `r0` register.
 
 ```assembly
-main:
-  push qword, 0         ; reserve 8 bytes for the return value
-  push qword, 25        ; argument 1
-  push qword, 45        ; argument 2
-  push dword, 16        ; bytecount of arguments
+; registers we'll use for calculations
+.def calc1 r1
+.def calc2 r2
 
-  call mymethod
-  rpop r0, qword        ; the top qword of the stack is now the 8 bytes we reserved earlier
+.def return_value r0
 
-  ; more program code here
+.org 0x00
+.def entry_addr main
+.label main
+    push dword, 0               ; reserve 4 bytes for return value
+    push dword, 25              ; push argument 1
+    push dword, 45              ; push argument 2
+    push dword, qword           ; push bytesize of arguments
+    call _add                   ; call the _add label
+    rpop return_value           ; pop the result into the return_value register
 
-mymethod:
-  load r0, qword, -20   ; fp - 20 is the offset of the first argument
-  load r1, qword, -12   ; fp - 12 is the offset of the second argument
-
-  ; do something with r0 and r1 here...
-
-  loadi r2, qword, 100  ; this is the return value
-  store -28, r2         ; fp - 28 is the address of the 8 bytes reserved earlier
-  ret
+.label _add
+    load calc1, -12             ; load the first argument into calc1
+    load calc2, -8              ; load the second argument into calc2
+    add calc1, calc1, calc2     ; add calc2 to calc1
+    store calc1, -16            ; write to return value
+    ret                         ; return from the subroutine
 ```
 
 Below is a diagram of how the stack is organized when entering the `add` block.
 
 ```
-+- Low addresses
++- High addresses
 |
 +-----------------------------+
 | Return value : 8 Bytes      | <- Return value
@@ -96,7 +103,7 @@ Below is a diagram of how the stack is organized when entering the `add` block.
 | Return address : 8 Bytes    |
 +-----------------------------+
 |
-+- High addresses
++- Low addresses
 ```
 
 The `call` instruction simply pushes the current frame pointer and the address of the next
@@ -106,7 +113,3 @@ old frame pointer and jumps to the specified address.
 The `ret` instruction restores the `fp` register to the value that's inside the current
 stack frame, pops off as many bytes as the argument count specifies and jumps to the return
 address.
-
-## Syscalls
-
-The `exit` syscall stops the machine's execution and stores the exit code in the `r0` register.
