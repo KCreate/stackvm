@@ -175,6 +175,15 @@ module Assembler
         value = parse_numeric_f64(token.value)
         read_token
         return Float64Value.new value
+      when :size
+        value = @token.value
+        read_token
+        byte_count = SIZE_BYTECOUNT[value]
+        return SizeSpecifier.new byte_count
+      when :label
+        value = @token.value
+        read_token
+        return Label.new value
       when :leftbracket
         read_token
 

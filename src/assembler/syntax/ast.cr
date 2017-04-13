@@ -321,7 +321,7 @@ module Assembler
   class Constant < ASTNode
     getter label : Label
     getter size : SizeSpecifier
-    getter value : Value
+    getter value : Argument
 
     def initialize(@label, @size, @value)
     end
