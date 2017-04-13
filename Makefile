@@ -1,12 +1,12 @@
-FILE = "spec/data/debug.bc"
+FILE = "examples/interrupts.asm"
 
 debug: stackvm
-	bin/stackvm build examples/debug.asm -o debug.bc
-	bin/stackvm run debug.bc --memory=400 --debugger
+	bin/stackvm build $(FILE) -o debug.bc
+	bin/stackvm run debug.bc --memory=441 --debugger
 
 run: stackvm
-	bin/stackvm build examples/debug.asm -o debug.bc
-	bin/stackvm run debug.bc --memory=400
+	bin/stackvm build $(FILE) -o debug.bc
+	bin/stackvm run debug.bc --memory=441
 
 stackvm_release:
 	mkdir -p bin
