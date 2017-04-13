@@ -21,7 +21,7 @@ global constants.
 ## Header
 
 | Name              | Offset | Size                   | Description                         |
-+-------------------+--------+------------------------+-------------------------------------+
+|-------------------|--------|------------------------|-------------------------------------|
 | magic             | `0x00` | `4`                    | ascii encoded string `NICE`         |
 | entry_addr        | `0x04` | `4`                    | Initial value of the `ip` register  |
 | int_handler       | `0x08` | `4`                    | Address of the interrupt handler    |
@@ -34,7 +34,7 @@ The load table in the programs header section includes `1` or more entries.
 Each entry is structured as follows:
 
 | Name   | Offset | Size | Description                       |
-+--------+--------+------+-----------------------------------+
+|--------|--------|------|-----------------------------------|
 | Offset | `0x0`  | `4`  | Start offset of section           |
 | Size   | `0x4`  | `4`  | Size of section                   |
 | Load   | `0x8`  | `4`  | Target offset in machine's memory |
@@ -42,7 +42,7 @@ Each entry is structured as follows:
 Given the following load table:
 
 | ID  | Offset       | Size         | Load         |
-+-----+--------------+--------------+--------------+
+|-----|--------------|--------------|--------------|
 | `0` | `0x00000000` | `0x000002aa` | `0x00337a00` |
 | `1` | `0x000002aa` | `0x00337a00` | `0x00000000` |
 | `2` | `0x00337caa` | `0x00000050` | `0x00000050` |
