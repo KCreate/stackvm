@@ -25,6 +25,8 @@ crash when accessed.
 | Stack memory (grows downwards) |
 +--------------------------------+ 0x00400000 : 3'767'278 bytes
 | Reserved for machine internals |
++--------------------------------+ 0x00797beb : 4 bytes
+| Interrupt handler address      |
 +--------------------------------+ 0x00797bee : 16 bytes
 | Interrupt memory               |
 +--------------------------------+ 0x00797bfe : 1 byte
