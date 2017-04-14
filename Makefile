@@ -1,5 +1,7 @@
 FILE = "examples/interrupts.asm"
 
+default: stackvm
+
 debug: stackvm
 	bin/stackvm build $(FILE) -o debug.bc
 	bin/stackvm run debug.bc --memory=441 --debugger
