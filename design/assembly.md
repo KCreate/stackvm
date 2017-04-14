@@ -20,7 +20,7 @@ Available assembler directives
 - `def`
 - `db`
 - `org`
-- `inclde`
+- `include`
 - `label`
 
 | Name      | Arguments          | Description                               |
