@@ -24,9 +24,8 @@ global constants.
 |-------------------|--------|------------------------|-------------------------------------|
 | magic             | `0x00` | `4`                    | ascii encoded string `NICE`         |
 | entry_addr        | `0x04` | `4`                    | Initial value of the `ip` register  |
-| int_handler       | `0x08` | `4`                    | Address of the interrupt handler    |
-| load_table_size   | `0x0c` | `4`                    | Number of entries in the load table |
-| load_table        | `0x10` | `load_table_size * 12` | Load table                          |
+| load_table_size   | `0x08` | `4`                    | Number of entries in the load table |
+| load_table        | `0x0c` | `load_table_size * 12` | Load table                          |
 
 ## Load table
 
