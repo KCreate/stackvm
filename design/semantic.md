@@ -176,14 +176,14 @@ will be casted to the other type. This might result in a loss of precision.
 
 ## Stack instructions
 
-| Name     | Arguments         | Description                                                       |
-|----------|-------------------|-------------------------------------------------------------------|
-| `load`   | reg, offset       | Read a `type` value from `fp - offset` and store it in `reg`      |
-| `loadr`  | reg, offset       | Read a `type` value from `fp - [offset]` and store it in `reg`    |
-| `loads`  | type, offset      | Read a `type` value from `fp - offset` and push it onto the stack |
-| `loadsr` | type, reg         | Read a `type` value from `fp - [reg]` and push it onto the stack  |
-| `store`  | offset, reg       | Store the contents of `reg` at `fp - offset`                      |
-| `push`   | type, value       | Push `value` onto the stack                                       |
+| Name     | Arguments         | Description                                                        |
+|----------|-------------------|--------------------------------------------------------------------|
+| `load`   | reg, offset       | Read a `reg.size` value from `fp - offset` and store it in `reg`   |
+| `loadr`  | reg, offset       | Read a `reg.size` value from `fp - [offset]` and store it in `reg` |
+| `loads`  | type, offset      | Read a `type` value from `fp - offset` and push it onto the stack  |
+| `loadsr` | type, reg         | Read a `type` value from `fp - [reg]` and push it onto the stack   |
+| `store`  | offset, reg       | Store the contents of `reg` at `fp - offset`                       |
+| `push`   | type, value       | Push `value` onto the stack                                        |
 
 ## Memory read / write
 
@@ -231,7 +231,7 @@ syscall id onto the stack. The syscall id is a `word`.
 |------------|--------|-----------|-------------------------------------------------------------|
 | `exit`     | `0x00` | code      | Halt the machine with `code` as the exit code (single byte) |
 | `debugger` | `0x01` | arg       | Breakpoint for debuggers. `arg` is a `dword` value          |
-| `sleep`    | `0x03` | millis    | Sleeps for `millis` milliseconds. `millis` is a `dword`     |
+| `sleep`    | `0x02` | millis    | Sleeps for `millis` milliseconds. `millis` is a `dword`     |
 
 Return values of syscalls are pushed onto the stack. Different syscalls may produce different return values.
 

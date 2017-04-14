@@ -79,7 +79,7 @@ module Constants
   # Lookup table for instruction lengths
   INSTRUCTION_LENGTH = [
     2, # rpush
-    6, # rpop
+    2, # rpop
     3, # mov
     0, # loadi (this is calculated in the vm itself)
     2, # rst
@@ -113,29 +113,29 @@ module Constants
     4, # or
     3, # not
 
-    14, # load
-    7, # loadr
-    13, # loads
+    6, # load
+    3, # loadr
+    9, # loads
     6, # loadsr
-    10, # store
+    6, # store
     0, # push (this is calculated in the vm itself)
 
     3, # read
-    10, # readc
+    6, # readc
     6, # reads
-    13, # readcs
+    9, # readcs
     3, # write
-    10, # writec
+    6, # writec
     6, # writes
-    13, # writecs
+    9, # writecs
     7, # copy
-    21, # copyc
+    13, # copyc
 
-    9, # jz
+    5, # jz
     2, # jzr
-    9, # jmp
+    5, # jmp
     2, # jmpr
-    9, # call
+    5, # call
     2, # callr
     1, # ret
 
