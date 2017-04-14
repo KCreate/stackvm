@@ -159,13 +159,12 @@ which can then contain any character.
 ## Literals
 
 ```assembly
-"hello world"     ; string literal
-
-25                ; decimal number
-25.5              ; floating-point number
-0b0010            ; binary number
-0x0101            ; hexadecimal number
-[1, 2, 3]         ; byte array number
+"hello world"           ; string literal
+25                      ; decimal number
+25.5                    ; floating-point number
+0b0010                  ; binary number
+0x0101                  ; hexadecimal number
+[1, 2, "test", [1, 2]]  ; array of literals
 ```
 
 Most literals don't have an assocated size, but are rather dependent upon a size specifier
