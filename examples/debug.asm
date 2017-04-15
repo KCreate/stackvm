@@ -1,7 +1,9 @@
 .def byte 1
+.def word 2
+.def dword 4
+.def qword 8
 
-.db CONSTANTS0 byte 0
-.db CONSTANTS1 byte 1
-.db CONSTANTS2 byte 2
-.db CONSTANTS3 byte 3
-.db CONSTANTS4 byte 4
+.db myfloat64 qword 25.5
+.db myfloat32 dword 25.5
+.db myfloat16 word  25.5
+.db myfloat8 byte   25.5

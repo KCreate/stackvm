@@ -106,6 +106,15 @@ module Assembler
       when IntegerLiteral
         bytes = get_bytes value.value
         return get_trimmed_bytes size, bytes
+      when FloatLiteral
+        if size == 4
+          value = value.value.to_i32
+        else
+          value = value.value
+        end
+
+        bytes = get_bytes value
+        return get_trimmed_bytes size, bytes
       when StringLiteral
         return get_trimmed_bytes size, value.value.to_slice
       when Label
