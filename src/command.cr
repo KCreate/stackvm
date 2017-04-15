@@ -127,10 +127,11 @@ module StackVM
         return
       end
 
+      path = File.expand_path filename
       content = File.read filename
       content = IO::Memory.new content
 
-      Builder.build filename, content do |err, result|
+      Builder.build path, content do |err, result|
         if err
           error err
           return

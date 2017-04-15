@@ -42,27 +42,7 @@ module Assembler
       builder = Builder.new
 
       begin
-        tokens = Lexer.analyse filename, source
-        tree = Parser.parse tokens
-
-        # Encode all statements in the module
-        tree.statements.each do |stat|
-          case stat
-          when Definition
-            builder.register_alias stat.name, stat.node
-          when LabelDefinition
-            builder.register_label stat.label
-          when Organize
-            bytes = builder.encode_value 4, stat.address
-            address = builder.get_casted_bytes UInt32, bytes
-            builder.add_load_entry address
-          when Constant
-            builder.register_label stat.name
-            size = builder.encode_size stat.size
-            value = builder.encode_value size, stat.value
-            builder.write value
-          end
-        end
+        builder.build filename, source
       rescue e : Exception
         yield e, Bytes.new 0
       end
@@ -79,6 +59,41 @@ module Assembler
 
       # Default load entry
       add_load_entry 0x00
+    end
+
+    def build(filename, source)
+      tokens = Lexer.analyse filename, source
+      tree = Parser.parse tokens
+
+      tree.statements.each do |stat|
+        case stat
+        when Definition
+          register_alias stat.name, stat.node
+        when LabelDefinition
+          register_label stat.label
+        when Organize
+          bytes = encode_value 4, stat.address
+          address = get_casted_bytes UInt32, bytes
+          add_load_entry address
+        when Include
+          include_filename = stat.path.value
+          wd = File.dirname filename
+          path = File.expand_path include_filename, wd
+
+          unless File.exists?(path) && File.readable?(path)
+            stat.raise "Could not open file #{include_filename}"
+          end
+
+          content = File.read path
+          content = IO::Memory.new content
+          build path, content
+        when Constant
+          register_label stat.name
+          size = encode_size stat.size
+          value = encode_value size, stat.value
+          write value
+        end
+      end
     end
 
     # Returns the amount of bytes *size* represents
