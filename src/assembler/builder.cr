@@ -52,6 +52,10 @@ module Assembler
             builder.register_alias stat.name, stat.node
           when LabelDefinition
             builder.register_label stat.label
+          when Organize
+            bytes = builder.encode_value 4, stat.address
+            address = builder.get_casted_bytes UInt32, bytes
+            builder.add_load_entry address
           when Constant
             builder.register_label stat.name
             size = builder.encode_size stat.size
@@ -81,7 +85,7 @@ module Assembler
     def encode_size(size : Atomic)
       case size
       when IntegerLiteral
-        return size.value.to_u32
+        return size.value.to_i32
       when FloatLiteral
         size.raise "Can't use float literal as size specifier"
       when StringLiteral
@@ -101,7 +105,7 @@ module Assembler
     end
 
     # Encodes *value* into *size* bytes
-    def encode_value(size : UInt32, value : Atomic)
+    def encode_value(size, value : Atomic)
       case value
       when IntegerLiteral
         bytes = get_bytes value.value
@@ -138,7 +142,7 @@ module Assembler
     end
 
     # :nodoc:
-    private def get_bytes(data : T) forall T
+    def get_bytes(data : T) forall T
       slice = Slice(T).new 1, data
       pointer = Pointer(UInt8).new slice.to_unsafe.address
       size = sizeof(T)
@@ -147,7 +151,7 @@ module Assembler
     end
 
     # Trims or zero-extends *bytes* to *size*
-    private def get_trimmed_bytes(size : UInt32, bytes : Bytes)
+    def get_trimmed_bytes(size, bytes : Bytes)
       if size > bytes.size
         encoded = Bytes.new size
         encoded.copy_from bytes
@@ -155,6 +159,13 @@ module Assembler
       end
 
       return bytes[0, size]
+    end
+
+    # Return a
+    def get_casted_bytes(x : T.class, source : Bytes) forall T
+      bytes = get_trimmed_bytes sizeof(T), source
+      ptr = Pointer(T).new bytes.to_unsafe.address
+      ptr[0]
     end
 
     # Registers a new label in the offset table
@@ -180,7 +191,7 @@ module Assembler
 
     # Add a new entry to the load table
     def add_load_entry(address)
-      @load_table << LoadTableEntry.new @output.pos, 0, address
+      @load_table << LoadTableEntry.new @output.pos, 0, address.to_i32
     end
 
     # Grows the size of the last load entry by *size*
