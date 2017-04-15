@@ -74,7 +74,7 @@ The program below calculates the sum of `25` and `45` and saves the result in th
 .def return_value r0
 
 .org 0x00
-.def entry_addr main
+.label entry_addr
 .label main
     push dword, 0               ; reserve 4 bytes for return value
     push dword, 25              ; push argument 1

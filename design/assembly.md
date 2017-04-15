@@ -36,26 +36,10 @@ Available assembler directives
 ```assembly
 .def counter r0
 loadi counter, 25
-
-loadi myreg, 25     ; myreg is accessible here
-.def myreg, 25      ; even though it is defined afterwards
 ```
 
 The `def` directive registers a new alias. Aliases get resolved during assembly
-and have no performance penalty. Aliases can be defined anywhere in the source
-code. Aliases can be set to the values of other aliases, but only if they were
-already defined before.
-
-```assembly
-; these are all okay
-.def a 10
-.def b a
-.def c b
-
-; this is not okay
-.def a b
-.def b 10
-```
+and have no performance penalty. Aliases can be defined anywhere in the program.
 
 You can't register aliases that have the same name as another directive, instruction
 or register.
