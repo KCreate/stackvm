@@ -1,292 +1,232 @@
-require "./lexer.cr"
 require "./ast.cr"
+require "./token.cr"
 
 module Assembler
-  class Parser < Lexer
 
-    SIZE_BYTECOUNT = {
-      "qword" => 8_u32,
-      "dword" => 4_u32,
-      "word" => 2_u32,
-      "byte" => 1_u32,
-    } of String => UInt32
+  class Parser
+    getter tokens : Array(Token)
+    getter current : Token
 
-    def initialize(file)
-      super file
-      read_token
+    def self.parse(tokens : Array(Token))
+      parser = Parser.new tokens
+      parser.parse
     end
 
-    def read_token
-      token = super
+    def initialize(tokens)
+      @tokens = tokens.select { |token|
+        token.type != :whitespace && token.type != :comment
+      }
 
-      case token.type
-      when :whitespace
-        read_token
-      when :comment
-        read_token
-      else
-        token
-      end
+      @current = Token.new :eof, ""
     end
 
     def parse
-      parse_module
+      if @tokens.size > 0
+        read
+        return parse_mod
+      end
+
+      Module.new
     end
 
-    # Parses a module
-    def parse_module
+    private def parse_mod
       mod = Module.new
 
-      until @token.type == :EOF
-        next read_token if @token.type == :newline
-        statement = parse_statement
-
-        case statement
-        when .is_a? Block
-          mod.blocks << statement
-        when .is_a? Constant
-          mod.constants << statement
-        else
-          raise "can't append node of type #{statement.class} to #{mod}"
-        end
+      until @current.type == :eof
+        mod.statements << parse_statement
       end
 
       mod
     end
 
-    # Parses a statement
-    def parse_statement
-      case @token.type
+    private def parse_statement
+      while @current.type == :newline; read; end
+
+      case @current.type
       when :dot
-        expect :label
-        return parse_constant
-      when :label
-        label = Label.new @token.value
-        block = Block.new label
-
-        expect :colon
-        expect :newline
-        read_token
-
-        until @token.type == :label || @token.type == :dot || @token.type == :EOF
-          next read_token if @token.type == :newline
-          block.instructions << parse_instruction
-        end
-
-        return block
+        expect :ident
+        return parse_directive
+      when :ident
+        return parse_instruction
       else
-        raise "unexpected token: #{@token}"
+        unexpected_token @current, "Expected a '.' or a label"
       end
     end
 
-    # Parses a single constant definition
-    def parse_constant
-      label = Label.new @token.value
-      read_token
-      size = parse_size_specifier
-      value = parse_value
-      skip :newline
-
-      Constant.new label, size, value
-    end
-
-    # Parses a single instruction
-    def parse_instruction
-      assert :instruction
-      instruction = Instruction.new @token.value
-
-      read_token
-
-      until @token.type == :newline
-        instruction.arguments << parse_argument
-        unless @token.type == :comma
-          break
-        end
-        skip :comma
-      end
-
-      skip :newline
-      instruction
-    end
-
-    # Parse a single argument to an instruction
-    def parse_argument
-      case @token.type
-      when :register
-        value = @token.value
-
-        mode = case value[-1]?
-        when 'd' then 1
-        when 'w' then 2
-        when 'b' then 3
+    private def parse_directive
+      case @current.value
+      when "label"
+        case (token = read).type
+        when :ident
+          expect :newline
+          advance
+          label = Label.new token.value
+          return LabelDefinition.new label
+        when :atsign
+          token = expect :string
+          expect :newline
+          advance
+          label = Label.new token.value
+          return LabelDefinition.new label
         else
-          0
+          unexpected_token token, "Expected label or '@'"
         end
-
-        unless mode == 0
-          value = value[0..-2]
+      when "def"
+        token = expect :ident
+        label = Label.new token.value
+        advance
+        atomic = parse_atomic
+        skip :newline
+        return Definition.new label, atomic
+      when "org"
+        case (token = read).type
+        when :ident
+          expect :newline
+          advance
+          return Organize.new Label.new token.value
+        else
+          atomic = parse_atomic
+          skip :newline
+          return Organize.new atomic
         end
-
-        read_token
-        return Register.new value, mode
-      when :label
-        value = @token.value
-        read_token
-        return Label.new value
-      when :size
-        value = @token.value
-        read_token
-        byte_count = SIZE_BYTECOUNT[value]
-        return SizeSpecifier.new byte_count
+      when "db"
+        token = expect :ident
+        advance
+        label = Label.new token.value
+        size = parse_atomic
+        value = parse_atomic
+        skip :newline
+        return Constant.new label, size, value
+      when "include"
+        token = expect :string
+        string = StringLiteral.new token.value
+        expect :newline
+        advance
+        return Include.new string
       else
-        return parse_value
+        raise "Unknown assembler directive at #{@current.location}"
       end
     end
 
-    # Parses a single size specifier
-    def parse_size_specifier
-      case @token.type
-      when :size
-        value = @token.value
-        read_token
-        byte_count = SIZE_BYTECOUNT[value]
-        return SizeSpecifier.new byte_count
-      when :numeric_int
-        value = parse_numeric_i64(@token.value).to_i32
-        read_token
-        return SizeSpecifier.new value
-      else
-        raise "unexpected token: #{@token}, expected a size specifier or byte count"
+    private def parse_instruction
+      label = Label.new @current.value
+      instr = Instruction.new label
+
+      advance
+
+      until @current.type == :newline
+        instr.arguments << parse_atomic
+
+        case @current.type
+        when :comma
+          advance
+        when :newline
+          # nothing to do
+        else
+          unexpected_token @current, "Expected a comma or newline"
+        end
       end
+
+      advance
+      instr
     end
 
-    # Parses a single value
-    def parse_value
-      case @token.type
+    private def parse_atomic
+      case @current.type
       when :numeric_int
-        value = parse_numeric_i64(token.value).to_u64
-        read_token
-        return IntegerValue.new value
+        int = IntegerLiteral.new parse_int @current.value
+        advance
+        return int
       when :numeric_float
-        value = parse_numeric_f32(token.value)
-        read_token
-        return Float32Value.new value
-      when :numeric_double
-        value = parse_numeric_f64(token.value)
-        read_token
-        return Float64Value.new value
-      when :size
-        value = @token.value
-        read_token
-        byte_count = SIZE_BYTECOUNT[value]
-        return SizeSpecifier.new byte_count
-      when :label
-        value = @token.value
-        read_token
-        return Label.new value
+        float = FloatLiteral.new @current.value.to_f64
+        advance
+        return float
+      when :string
+        string = StringLiteral.new @current.value
+        advance
+        return string
+      when :ident
+        label = Label.new @current.value
+        advance
+        return label
+      when :atsign
+        token = expect :string
+        label = Label.new token.value
+        advance
+        return label
       when :leftbracket
-        read_token
+        advance
 
-        array = ByteArray.new
+        array = ArrayLiteral.new
 
-        until @token.type == :rightbracket
-          assert :numeric_int
-          value = parse_numeric_i64(@token.value).to_u8
-          array.value << value
+        until @current.type == :rightbracket
 
-          read_token
-          unless @token.type == :comma
-            break
+          # Consume all newlines since we don't care about them here
+          while @current.type == :newline; read; end
+          array.items << parse_atomic
+
+          # We also don't care about newlines here
+          while @current.type == :newline; read; end
+
+          case @current.type
+          when :comma
+            advance
           end
-          skip :comma
         end
 
-        skip :rightbracket
+        advance
 
         return array
       else
-        raise "unexpected token: #{@token}, expected a value"
+        unexpected_token @current, "Expected an atomic value"
       end
     end
 
-    # Tries to parse a i64 value
-    def parse_numeric_i64(value : String)
-      num = value.to_i64?
-
-      unless num
-        raise "could not convert #{value} to i64"
-      end
-
-      num
+    private def parse_int(string)
+      return 0_i64 if string == "0"
+      return string.to_i64(underscore: true, prefix: true)
     end
 
-    # Tries to parse a f32 value
-    def parse_numeric_f32(value : String)
-      num = value.to_f32?
-
-      unless num
-        raise "could not convert #{value} to f32"
-      end
-
-      num
+    private def advance
+      read
     end
 
-    # Tries to parse a f64 value
-    def parse_numeric_f64(value : String)
-      num = value.to_f64?
-
-      unless num
-        raise "could not convert #{value} to f64"
-      end
-
-      num
+    private def read
+      @current = @tokens.shift? || Token.new :eof, ""
     end
 
-    private def expect(type, value : String? = nil)
-      token = read_token
+    private def skip(type)
+      unless @current.type == type
+        unexpected_token @current, "Expected #{type}"
+      end
 
+      read
+    end
+
+    private def read_ignore_newline
+      while read.type == :newline
+      end
+
+      @current
+    end
+
+    private def expect(type)
+      token = read
       unless token.type == type
-        raise "unexpected token: #{@token}, expected: #{type}"
+        unexpected_token token, "Expected #{type}"
       end
-
-      if value.is_a? String
-        unless token.value == value
-          raise "unexpected token: #{@token}, expected: #{value}"
-        end
-      end
-
       token
     end
 
-    private def skip(type, value : String? = nil)
-      token = @token
+    private def unexpected_token(token, message)
+      raise <<-ERR
+      Unexpected token: #{token.type}
+      at: #{token.location}
 
-      unless token.type == type
-        raise "unexpected token: #{@token}, expected: #{type}"
-      end
-
-      if value.is_a? String
-        unless token.value == value
-          raise "unexpected token: #{@token}, expected: #{value}"
-        end
-      end
-
-      read_token
-    end
-
-    private def assert(type, value : String? = nil)
-      token = @token
-
-      unless token.type == type
-        raise "unexpected token: #{@token}, expected: #{type}"
-      end
-
-      if value.is_a? String
-        unless token.value == value
-          raise "unexpected token: #{@token}, expected: #{value}"
-        end
-      end
+      #{message}
+      ERR
     end
 
   end
+
 end

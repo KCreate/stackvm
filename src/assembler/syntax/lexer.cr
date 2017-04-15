@@ -1,67 +1,52 @@
 require "./reader.cr"
-require "./ast.cr"
 require "./token.cr"
 
 module Assembler
-  REGISTERS = [] of String
-  SIZE = ["qword", "dword", "word", "byte"]
-  INSTRUCTIONS = [
-    "rpush", "rpop", "mov", "loadi", "rst",
-    "add", "sub", "mul", "div", "idiv", "rem", "irem",
-    "fadd", "fsub", "fmul", "fdiv", "frem", "fexp",
-    "cmp", "lt", "gt", "ult", "ugt",
-    "shr", "shl", "and", "xor", "nand", "or", "not",
-    "load", "loadr", "loads", "loadsr", "store", "push",
-    "read", "readc", "reads", "readcs", "write", "writec", "writes", "writecs", "copy", "copyc",
-    "jz", "jzr", "jmp", "jmpr", "call", "callr", "ret",
-    "nop", "syscall"
-  ]
-
-  # General purpose registers
-  0.upto 59 do |i|
-    ["", "d", "w", "b"].each do |mode|
-      REGISTERS << "r#{i}#{mode}"
-    end
-  end
-
-  ["ip", "sp", "fp", "flags"].each do |reg|
-    ["", "d", "w", "b"].each do |mode|
-      REGISTERS << "#{reg}#{mode}"
-    end
-  end
 
   class Lexer < Reader
-    getter token : Token
+    property token : Token
+    property tokens : Array(Token)
+    property filename : String
 
-    def initialize(file)
-      super file
-      @token = Token.new :EOF, "", 1, 1
+    def self.analyse(filename, io)
+      lexer = Lexer.new filename, io
+      lexer.analyse
     end
 
-    private def reset_token
-      @token.type = :undefined
-      @token.value = ""
-      @token.row = @row
-      @token.column = @column
+    def initialize(@filename, io)
+      super(io)
+      @token = Token.new :undefined, ""
+      @tokens = [] of Token
     end
 
-    # Reads a single token
+    def analyse
+      until (token = read_token).type == :eof
+        @tokens << token
+      end
+
+      @tokens
+    end
+
     def read_token
       reset_token
 
       case current_char
       when '\0'
-        read :EOF
-      when ':'
-        read :colon
-      when '.'
-        read :dot
-      when ','
-        read :comma
+        @token.type = :eof
+      when ' ', '\t'
+        consume_whitespace
       when '['
         read :leftbracket
       when ']'
         read :rightbracket
+      when '\n'
+        read :newline
+      when '@'
+        read :atsign
+      when '.'
+        read :dot
+      when ','
+        read :comma
       when ';'
         consume_comment
       when '-'
@@ -69,149 +54,177 @@ module Assembler
         consume_numeric
       when '0'..'9'
         consume_numeric
+      when '"'
+        consume_string
       when '\r'
-        case read
-        when '\n'
-          consume_whitespace
+        if read == '\n'
+          read :newline
         else
-          unexpected_char current_char
+          unexpected_char
         end
-      when '\n'
-        read :newline
-      when ' ', '\t'
-        consume_whitespace
       else
-        if label_start current_char
-          consume_label
+        if ident_start current_char
+          consume_ident
         else
-          unexpected_char current_char
+          unexpected_char
         end
       end
 
-      @frame.clear
-      @frame << current_char
       @token.dup
-    end
-
-    private def consume_numeric
-      passed_underscore = false
-      @token.type = :numeric_int
-
-      loop do
-        case read
-        when .number?
-          # nothing to do
-        when '_'
-          passed_underscore = true
-        else
-          break
-        end
-      end
-
-      if current_char == '.' && peek.number?
-        @token.type = :numeric_double
-        read
-        loop do
-          case read
-          when .number?
-            # nothing to do
-          when '_'
-            passed_underscore = true
-          else
-            break
-          end
-        end
-      end
-
-      if current_char == '_'
-        if read == 'f' && read == '3' && read == '2'
-          read
-          @token.type = :numeric_float
-        else
-          unexpected_char current_char
-        end
-      end
-
-      if @token.type == :numeric_float
-        number_value = @frame.to_s[0..-6]
-      else
-        number_value = @frame.to_s[0..-2]
-      end
-
-      if passed_underscore
-        number_value = number_value.tr "_", ""
-      end
-
-      @token.value = number_value
-    end
-
-    private def consume_whitespace
-      while current_char.ascii_whitespace?
-        read
-      end
-
-      @token.value = @frame.to_s[0..-2]
-      @token.type = :whitespace
-    end
-
-    private def consume_comment
-      loop do
-        case read
-        when '\n'
-          break
-        when '\r'
-          case read
-          when '\n'
-            break
-          else
-            unexpected_char current_char
-          end
-        else
-          # nothing to do
-        end
-      end
-
-      @token.value = @frame.to_s[0..-2]
-      @token.type = :comment
-    end
-
-    private def consume_label
-      while label_part current_char
-        read
-      end
-
-      @token.value = @frame.to_s[0..-2]
-      @token.type = :label
-
-      if SIZE.includes? @token.value
-        @token.type = :size
-      end
-
-      if REGISTERS.includes? @token.value
-        @token.type = :register
-      end
-
-      if INSTRUCTIONS.includes? @token.value
-        @token.type = :instruction
-      end
-    end
-
-    private def label_start(char)
-      char.letter? || char == '_'
-    end
-
-    private def label_part(char)
-      label_start(char) || char.number?
     end
 
     private def read(type)
       @token.type = type
-      @token.value = "#{@frame}"
       super()
     end
 
-    private def unexpected_char(char)
-      raise "unexpected char: #{char}, ascii: #{char.ord}"
+    private def reset_token
+      @token.type = :undefined
+      @token.value = ""
+      @token.location = Location.new @row, @column, @filename
+
+      @frame.clear
+      @frame << current_char
+    end
+
+    # Consumes a numeric value
+    private def consume_numeric
+      passed_dot = false
+
+      loop do
+        char = read
+
+        unless ('0'..'9') === char || ('a'..'f') === char || char == 'x' || char == 'b' ||
+               char == '.' || char == '_'
+          break
+        end
+
+        if char == '.'
+          passed_dot = true
+        end
+      end
+
+      value = @frame.to_s[0..-2]
+
+      # Validate the number
+      if passed_dot
+        num = value.to_f64?
+        unless num
+          raise "Could not parse #{value} as a floating-point number at #{@token.location}"
+        end
+
+        @token.type = :numeric_float
+      else
+        unless value == "0"
+          num = value.to_i64?(underscore: true, prefix: true)
+          unless num
+            raise "Could not parse #{value} as a integer number at #{@token.location}"
+          end
+        end
+
+        @token.type = :numeric_int
+      end
+
+      @token.value = value
+    end
+
+    # Consumes a string literal
+    private def consume_string
+      io = IO::Memory.new
+
+      loop do
+        char = read
+
+        case char
+        when '"'
+          break
+        when '\\'
+          case read
+          when 'b'
+            io << "\u{8}"
+          when 'n'
+            io << "\n"
+          when 'r'
+            io << "\r"
+          when 't'
+            io << "\t"
+          when 'v'
+            io << "\v"
+          when 'e'
+            io << "\e"
+          when '\n'
+            io << "\n"
+          when '"'
+            io << "\""
+          when '\\'
+            io << "\\"
+          when '\0'
+            raise "Unclosed string at #{@token.location}"
+          end
+        when '\0'
+          raise "Unclosed string at #{@token.location}"
+        else
+          io << char
+        end
+      end
+
+      @token.type = :string
+      @token.value = io.to_s
+      io.clear
+      read
+    end
+
+    # Consumes whitespace
+    private def consume_whitespace
+      loop do
+        char = read
+
+        unless char == ' ' || char == '\t'
+          break
+        end
+      end
+
+      @token.type = :whitespace
+      @token.value = @frame.to_s[0..-2]
+    end
+
+    # Consumes a comment
+    private def consume_comment
+      loop do
+        char = read
+
+        case char
+        when '\n', '\r'
+          break
+        else
+          # nothing to do
+        end
+      end
+
+      @token.type = :comment
+      @token.value = @frame.to_s[0..-3]
+    end
+
+    # Consumes an identifier
+    private def consume_ident
+      while ident_part read
+      end
+
+      @token.type = :ident
+      @token.value = @frame.to_s[0..-2]
+    end
+
+    # Checks if *char* can be the starting character of an identifier
+    private def ident_start(char)
+      char.letter? || char == '_' || char == '$' || char == '%'
+    end
+
+    private def ident_part(char)
+      ident_start(char) || char.number?
+    end
+
+    private def unexpected_char
+      raise "Unexpected char \"#{current_char}\" at #{@token.location}"
     end
   end
 

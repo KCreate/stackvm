@@ -1,191 +1,121 @@
-require "./syntax/parser.cr"
+require "./syntax/**"
 require "../constants/constants.cr"
 
 module Assembler
   include Constants
 
+  alias LoadTableEntry = NamedTuple(offset: Int32, size: Int32, address: Int32)
+
   class Builder
+
+    # Output to which the generated executable is written
     property output : IO::Memory
-    property offset_table : Hash(String, Int64)
-    property unresolved_symbols : Hash(Int64, String)
 
-    def self.build(source)
-      source = IO::Memory.new source
-      mod = Parser.new(source).parse
-      builder = Builder.new
+    # Maintains a mapping from labels to offsets in the
+    # generated executable
+    property offsets : Hash(String, Int32)
 
-      begin
+    # Maintains a mapping from labels to ast nodes
+    property aliases : Hash(String, ASTNode)
 
-        # Encodes all blocks
-        mod.blocks.each do |block|
-          builder.register_symbol block.label.name
+    # The load table which gets embedded into the final executable
+    #
+    # Each table entry contains three 32-bit unsigned integers.
+    # 0 - Offset in the executable
+    # 1 - Length of the segment
+    # 2 - Address to which it should be loaded in memory
+    property load_table : Array(LoadTableEntry)
 
-          # Encode each instruction
-          block.instructions.each do |instruction|
-            builder.codegen_instruction instruction.mnemonic, instruction.arguments
+    # The address which is written into the *entry_addr* field
+    # of the executables header section
+    property entry_adr : Int32
 
-          end
-        end
+    # Builds *source*
+    def self.build(filename, source)
+      tokens = Lexer.analyse filename, source
+      tree = Parser.parse tokens
 
-        # Encode all constants
-        mod.constants.each do |constant|
-          builder.register_symbol constant.label.name
-          builder.write_constant constant.size.bytecount, constant.value.bytes
-        end
+      puts tree
 
-        # Resolve all unresolved symbols
-        builder.resolve_symbols
-
-        yield nil, builder.output
-      rescue e : Exception
-        yield e.message, builder.output
-      end
-
-      builder.output
+      yield nil, Bytes.new 0
     end
 
     def initialize
       @output = IO::Memory.new
-      @offset_table = {} of String => Int64
-      @unresolved_symbols = {} of Int64 => String
+      @offsets = {} of String => Int32
+      @aliases = {} of String => ASTNode
+      @load_table = [] of LoadTableEntry
+      @entry_adr = -1
+
+      # Default load entry
+      add_load_entry 0x00
     end
 
-    # Register a new symbol at this offset
-    def register_symbol(name)
-
-      # Check for duplicate symbols
-      if @offset_table.has_key? name
-        raise "duplicate symbol definition: #{name}"
+    # Registers a new label in the offset table
+    def register_label(label : Label)
+      if @offsets.has_key?(label) || @aliases.has_key?(label)
+        label.raise "Can't redefine #{label.value}"
       end
 
-      @offset_table[name] = @output.pos.to_i64
+      @offsets[label.value] = @output.pos
     end
 
-    # Register a symbol as needing to be resolved
-    def register_unresolved_symbol(name)
-      @unresolved_symbols[@output.pos.to_i64] = name
+    # Register a new alias
+    def register_alias(label : Label, node : ASTNode)
+      if @offsets.has_key?(label) || @aliases.has_key?(label)
+        label.raise "Can't redefine #{label.value}"
+      end
+
+      @aliases[label.value] = node
     end
 
-    # Resolves all unresolved symbols
-    def resolve_symbols
-      @unresolved_symbols.each do |address, symbol|
-        offset = @offset_table[symbol]?
+    # Add a new entry to the load table
+    def add_load_entry(address)
+      @load_table << {offset: @output.pos, size: 0, address: address}
+    end
 
-        unless offset
-          raise "undefined symbol: #{symbol}"
-        end
-
-        unresolved_address = @output.to_slice[address, 8]
-        IO::ByteFormat::LittleEndian.encode(offset, unresolved_address)
+    # Grows the size of the last load entry by *size*
+    def grow_load_entry_size(size)
+      if @load_table.size > 0
+        last_offset = @load_table[-1].offset
+        @load_table[-1].size = @output.pos - last_offset
       end
     end
 
-    # Writes a constant into the output
-    #
-    # Trims *value* if *bytecount* is smaller than *value.size*
-    # Appends zero value if *bytecount* is bigger
-    def write_constant(bytecount, value : Bytes)
-      bytes : Bytes
-
-      if value.size < bytecount
-        bytes = Bytes.new bytecount
-        bytes.copy_from value
-      else
-        bytes = value[0, bytecount]
-      end
-
+    # Write bytes into the output
+    def write(bytes : Bytes)
       @output.write bytes
+      grow_load_entry_size bytes.size
     end
 
-    # :ditto:
-    def write_constant(value)
-      @output.write_bytes(value, IO::ByteFormat::LittleEndian)
-    end
-
-    # Writes *argument* to the output, limiting it to *bytecount*
-    #
-    # Also registers any symbols to the unresolved symbols table
-    def write_argument(bytecount, argument)
-      case argument
-      when Label
-        register_unresolved_symbol argument.name
-        write_constant 8, Bytes.new(8)
-      else
-        write_constant bytecount, argument.bytes
+    # Encode the header section of the program
+    def encode_header
+      #                 +- Magic numbers
+      #                 |   +- Entry address
+      #                 |   |   +- Load table size
+      #                 |   |   |   +- Reserve enough space for all entries
+      #                 v   v   v   v
+      header = Slice(Int32).new 1 + 1 + 1 + (@load_table.size * 3)
+      header[0] = 0x4543494e # bytes are reversed because of endianness
+      header[1] = @offsets["entry_addr"]? || 0
+      header[2] = @load_table.size
+      @load_table.each_with_index do |entry, index|
+        header[3 + (index * 3) + 0] = entry.offset
+        header[3 + (index * 3) + 1] = entry.size
+        header[3 + (index * 3) + 2] = entry.address
       end
+
+      ptr = Pointer(UInt8).new header.to_unsafe.address
+      Bytes.new ptr, header.bytesize
     end
 
-    # :nodoc:
-    private macro map_args(bytecounts = [] of Int32)
-      assert_count mnemonic, arguments, {{bytecounts.size}}
-
-      {% for size, i in bytecounts %}
-        write_argument {{bytecounts[i]}}, arguments[{{i}}]
-      {% end %}
-    end
-
-    # Encodes a given instruction
-    def codegen_instruction(mnemonic, arguments)
-      opcode = Opcode.from mnemonic
-      write_constant opcode.value
-
-      case mnemonic
-      when "rpush", "rst" then map_args [1]
-      when "rpop" then map_args [1, 4]
-      when "mov", "cmp", "lt", "gt", "ult", "ugt", "not" then map_args [1, 1]
-      when "add", "sub", "mul", "div", "idiv", "rem", "irem", "fadd", "fsub", "fmul", "fdiv", "frem", "fexp",
-          "shr", "shl", "and", "xor", "nand", "or"
-        map_args [1, 1, 1]
-      when "load" then map_args [1, 4, 8]
-      when "loadr" then map_args [1, 4, 1]
-      when "loads" then map_args [4, 8]
-      when "loadsr" then map_args [4, 1]
-      when "store" then map_args [8, 1]
-      when "read" then map_args [1, 1]
-      when "readc" then map_args [1, 8]
-      when "reads" then map_args [4, 1]
-      when "readcs" then map_args [4, 8]
-      when "write" then map_args [1, 1]
-      when "writec" then map_args [8, 1]
-      when "writes" then map_args [1, 4]
-      when "writecs" then map_args [8, 4]
-      when "copy" then map_args [1, 4, 1]
-      when "copyc" then map_args [8, 4, 8]
-      when "jz" then map_args [8]
-      when "jzr" then map_args [1]
-      when "jmp" then map_args [8]
-      when "jmpr" then map_args [1]
-      when "call" then map_args [8]
-      when "callr" then map_args [1]
-      when "ret" then map_args
-      when "nop" then map_args
-      when "syscall" then map_args
-      when "push"
-        assert_count mnemonic, arguments, 2
-        size = arguments[0]
-        value = arguments[1]
-
-        bytesize = IO::ByteFormat::LittleEndian.decode(UInt32, size.bytes)
-
-        write_argument 4, size
-        write_argument bytesize, value
-      when "loadi"
-        assert_count mnemonic, arguments, 3
-        target = arguments[0]
-        size = arguments[1]
-        value = arguments[2]
-
-        bytesize = IO::ByteFormat::LittleEndian.decode(UInt32, size.bytes)
-
-        write_argument 1, target
-        write_argument 4, size
-        write_argument bytesize, value
-      end
-    end
-
-    # Asserts that *arguments* has exactly *size* items in it
-    private def assert_count(mnemonic, arguments, size)
-      raise "#{mnemonic} expected #{size} arguments, got #{arguments.size}" if arguments.size != size
+    # Encodes the full executable
+    def encode_full
+      header = encode_header
+      executable = Bytes.new @output.size + header.bytesize
+      header.copy_to executable
+      @output.to_slice.copy_to executable[header_bytes.size, -1]
+      executable
     end
   end
 

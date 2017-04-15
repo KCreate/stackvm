@@ -17,14 +17,10 @@ module StackVM
       end
 
       case command = arguments.shift
-      when "run"
-        run arguments
-      when "build"
-        build arguments
-      when "help"
-        help
-      when "version"
-        version
+      # when "run" then run arguments
+      when "build" then build arguments
+      when "help" then help
+      when "version" then version
       else
         error "unknown command: #{command}"
       end
@@ -132,8 +128,9 @@ module StackVM
       end
 
       content = File.read filename
+      content = IO::Memory.new content
 
-      Builder.build content do |err, result|
+      Builder.build filename, content do |err, result|
         if err
           error err
           return
