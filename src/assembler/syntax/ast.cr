@@ -10,16 +10,23 @@ module Assembler
     def at(location)
       @location_start = location
       @location_end = location
+      self
     end
 
     def at(start, loc_end)
       @location_start = start
       @location_end = loc_end
+      self
     end
 
     def at(node : ASTNode)
       @location_start = node.location_start
       @location_end = node.location_end
+      self
+    end
+
+    def raise(message)
+      ::raise "#{message} at #{@location_start || "??"}"
     end
   end
 
@@ -63,7 +70,7 @@ module Assembler
   # A definition declares a new alias for another ASTNode
   class Definition < Statement
     getter name : Label
-    getter node : ASTNode
+    getter node : Atomic
 
     def initialize(@name, @node)
     end
@@ -170,19 +177,4 @@ module Assembler
       io << @value
     end
   end
-
-  class ArrayLiteral < Atomic
-    getter items : Array(Atomic)
-
-    def initialize
-      @items = [] of Atomic
-    end
-
-    def to_s(io)
-      io << "["
-      io << @items.join ", "
-      io << "]"
-    end
-  end
-
 end

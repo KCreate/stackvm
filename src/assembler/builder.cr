@@ -4,7 +4,14 @@ require "../constants/constants.cr"
 module Assembler
   include Constants
 
-  alias LoadTableEntry = NamedTuple(offset: Int32, size: Int32, address: Int32)
+  class LoadTableEntry
+    property offset : Int32
+    property size : Int32
+    property address : Int32
+
+    def initialize(@offset, @size, @address)
+    end
+  end
 
   class Builder
 
@@ -15,8 +22,8 @@ module Assembler
     # generated executable
     property offsets : Hash(String, Int32)
 
-    # Maintains a mapping from labels to ast nodes
-    property aliases : Hash(String, ASTNode)
+    # Maintains a mapping from labels to atomic values
+    property aliases : Hash(String, Atomic)
 
     # The load table which gets embedded into the final executable
     #
@@ -32,23 +39,113 @@ module Assembler
 
     # Builds *source*
     def self.build(filename, source)
-      tokens = Lexer.analyse filename, source
-      tree = Parser.parse tokens
+      builder = Builder.new
 
-      puts tree
+      begin
+        tokens = Lexer.analyse filename, source
+        tree = Parser.parse tokens
 
-      yield nil, Bytes.new 0
+        # Encode all statements in the module
+        tree.statements.each do |stat|
+          case stat
+          when Definition
+            builder.register_alias stat.name, stat.node
+          when LabelDefinition
+            builder.register_label stat.label
+          when Constant
+            builder.register_label stat.name
+            size = builder.encode_size stat.size
+            value = builder.encode_value size, stat.value
+            builder.write value
+          end
+        end
+      rescue e : Exception
+        yield e, Bytes.new 0
+      end
+
+      yield nil, builder.encode_full
     end
 
     def initialize
       @output = IO::Memory.new
       @offsets = {} of String => Int32
-      @aliases = {} of String => ASTNode
+      @aliases = {} of String => Atomic
       @load_table = [] of LoadTableEntry
       @entry_adr = -1
 
       # Default load entry
       add_load_entry 0x00
+    end
+
+    # Returns the amount of bytes *size* represents
+    def encode_size(size : Atomic)
+      case size
+      when IntegerLiteral
+        return size.value.to_u32
+      when FloatLiteral
+        size.raise "Can't use float literal as size specifier"
+      when StringLiteral
+        size.raise "Can't use string literal as size specifier"
+      when Label
+
+        # Check if this label is a valid alias to something
+        if @aliases.has_key? size.value
+          node = @aliases[size.value]
+          return encode_size node
+        end
+
+        size.raise "Expected label to be a definition"
+      else
+        size.raise "Bug: Unknwon node type #{size.class}"
+      end
+    end
+
+    # Encodes *value* into *size* bytes
+    def encode_value(size : UInt32, value : Atomic)
+      case value
+      when IntegerLiteral
+        bytes = get_bytes value.value
+        return get_trimmed_bytes size, bytes
+      when StringLiteral
+        return get_trimmed_bytes size, value.value.to_slice
+      when Label
+
+        # Check both the offset table and the alias table
+        if @offsets.has_key? value.value
+          offset = @offsets[value.value]
+          bytes = get_bytes offset
+          return get_trimmed_bytes size, bytes
+        end
+
+        if @aliases.has_key? value.value
+          node = @aliases[value.value]
+          return encode_value size, node
+        end
+
+        value.raise "Bug: Unknown label #{value.value}"
+      else
+        value.raise "Bug: Unknown node type #{value.class}"
+      end
+    end
+
+    # :nodoc:
+    private def get_bytes(data : T) forall T
+      slice = Slice(T).new 1, data
+      pointer = Pointer(UInt8).new slice.to_unsafe.address
+      size = sizeof(T)
+      bytes = Bytes.new pointer, size
+      bytes
+    end
+
+    # Trims or zero-extends *bytes* to *size*
+    private def get_trimmed_bytes(size : UInt32, bytes : Bytes)
+      if size > bytes.size
+        encoded = Bytes.new size
+        encoded.copy_from bytes
+        return encoded
+      end
+
+      return bytes[0, size]
     end
 
     # Registers a new label in the offset table
@@ -57,11 +154,14 @@ module Assembler
         label.raise "Can't redefine #{label.value}"
       end
 
-      @offsets[label.value] = @output.pos
+      # Get the current load entry
+      entry = @load_table[-1]
+      offset = entry.offset + entry.size
+      @offsets[label.value] = offset
     end
 
     # Register a new alias
-    def register_alias(label : Label, node : ASTNode)
+    def register_alias(label : Label, node : Atomic)
       if @offsets.has_key?(label) || @aliases.has_key?(label)
         label.raise "Can't redefine #{label.value}"
       end
@@ -71,7 +171,7 @@ module Assembler
 
     # Add a new entry to the load table
     def add_load_entry(address)
-      @load_table << {offset: @output.pos, size: 0, address: address}
+      @load_table << LoadTableEntry.new @output.pos, 0, address
     end
 
     # Grows the size of the last load entry by *size*
@@ -112,9 +212,10 @@ module Assembler
     # Encodes the full executable
     def encode_full
       header = encode_header
-      executable = Bytes.new @output.size + header.bytesize
+      body = @output.to_slice
+      executable = Bytes.new header.size + body.size
       header.copy_to executable
-      @output.to_slice.copy_to executable[header_bytes.size, -1]
+      body.copy_to executable + header.size
       executable
     end
   end

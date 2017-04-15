@@ -35,10 +35,6 @@ module Assembler
         @token.type = :eof
       when ' ', '\t'
         consume_whitespace
-      when '['
-        read :leftbracket
-      when ']'
-        read :rightbracket
       when '\n'
         read :newline
       when '@'

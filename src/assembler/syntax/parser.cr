@@ -30,7 +30,7 @@ module Assembler
     end
 
     private def parse_mod
-      mod = Module.new
+      mod = Module.new.at @current.location
 
       until @current.type == :eof
         mod.statements << parse_statement
@@ -54,63 +54,68 @@ module Assembler
     end
 
     private def parse_directive
+      location_start = @current.location
+
       case @current.value
       when "label"
         case (token = read).type
         when :ident
           expect :newline
           advance
-          label = Label.new token.value
-          return LabelDefinition.new label
+          label = Label.new(token.value).at(token.location)
+          return LabelDefinition.new(label).at(location_start, label.location_end)
         when :atsign
           token = expect :string
           expect :newline
           advance
-          label = Label.new token.value
-          return LabelDefinition.new label
+          label = Label.new(token.value).at(token.location)
+          return LabelDefinition.new(label).at location_start, token.location
         else
           unexpected_token token, "Expected label or '@'"
         end
       when "def"
         token = expect :ident
-        label = Label.new token.value
+        label = Label.new(token.value).at(token.location)
         advance
         atomic = parse_atomic
         skip :newline
-        return Definition.new label, atomic
+        return Definition.new(label, atomic).at(location_start, atomic.location_end)
       when "org"
         case (token = read).type
         when :ident
           expect :newline
           advance
-          return Organize.new Label.new token.value
+          label = Label.new(token.value).at(token.location)
+          return Organize.new(label).at(location_start, token.location)
         else
           atomic = parse_atomic
           skip :newline
-          return Organize.new atomic
+          return Organize.new(atomic).at(location_start, atomic.location_end)
         end
       when "db"
         token = expect :ident
         advance
-        label = Label.new token.value
+        label = Label.new(token.value).at(token.location)
         size = parse_atomic
         value = parse_atomic
         skip :newline
-        return Constant.new label, size, value
+        return Constant.new(label, size, value).at(location_start, value.location_end)
       when "include"
         token = expect :string
-        string = StringLiteral.new token.value
+        string = StringLiteral.new(token.value).at(token.location)
         expect :newline
         advance
-        return Include.new string
+        return Include.new(string).at(location_start, token.location)
       else
         raise "Unknown assembler directive at #{@current.location}"
       end
     end
 
     private def parse_instruction
-      label = Label.new @current.value
-      instr = Instruction.new label
+      location_start = @current.location
+
+      label = Label.new(@current.value).at(location_start)
+      instr = Instruction.new(label)
 
       advance
 
@@ -127,56 +132,37 @@ module Assembler
         end
       end
 
+      instr.at(location_start, @current.location)
+
       advance
       instr
     end
 
     private def parse_atomic
+      location_start = @current.location
+
       case @current.type
       when :numeric_int
-        int = IntegerLiteral.new parse_int @current.value
+        int = IntegerLiteral.new(parse_int @current.value).at(location_start)
         advance
         return int
       when :numeric_float
-        float = FloatLiteral.new @current.value.to_f64
+        float = FloatLiteral.new(@current.value.to_f64).at(location_start)
         advance
         return float
       when :string
-        string = StringLiteral.new @current.value
+        string = StringLiteral.new(@current.value).at(location_start)
         advance
         return string
       when :ident
-        label = Label.new @current.value
+        label = Label.new(@current.value).at(location_start)
         advance
         return label
       when :atsign
         token = expect :string
-        label = Label.new token.value
+        label = Label.new(token.value).at(location_start, @current.location)
         advance
         return label
-      when :leftbracket
-        advance
-
-        array = ArrayLiteral.new
-
-        until @current.type == :rightbracket
-
-          # Consume all newlines since we don't care about them here
-          while @current.type == :newline; read; end
-          array.items << parse_atomic
-
-          # We also don't care about newlines here
-          while @current.type == :newline; read; end
-
-          case @current.type
-          when :comma
-            advance
-          end
-        end
-
-        advance
-
-        return array
       else
         unexpected_token @current, "Expected an atomic value"
       end
