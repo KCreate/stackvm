@@ -189,14 +189,14 @@ module VM
     # Runs a single cpu cycle
     def cycle
       instruction = fetch
-      old_ip = reg_read UInt64, Register::IP
+      old_ip = reg_read UInt32, Register::IP.dword
       execute instruction, old_ip
 
       # Only increment the IP if the last instruction didn't modify it
-      if old_ip == reg_read UInt64, Register::IP
+      if old_ip == reg_read UInt32, Register::IP.dword
         instruction_length = decode_instruction_length instruction
         new_ip = old_ip + instruction_length
-        reg_write Register::IP, new_ip
+        reg_write Register::IP.dword, new_ip
       end
 
       self
@@ -213,7 +213,7 @@ module VM
 
     # Fetches the current instruction
     def fetch
-      address = reg_read UInt64, Register::IP
+      address = reg_read UInt32, Register::IP.dword
       byte = mem_read UInt8, address
       Opcode.new byte
     end
@@ -304,18 +304,17 @@ module VM
     def decode_instruction_length(instruction : Opcode)
       case instruction
       when Opcode::LOADI
-        address = reg_read UInt64, Register::IP
-        size = mem_read UInt32, address + 2
+        address = reg_read UInt32, Register::IP.dword
+        reg = Register.new mem_read UInt8, address + 1
 
         #      +- Opcode
         #      |   +- Target register
-        #      |   |   +- Size specifier
-        #      |   |   |   +- Value
-        #      |   |   |   |
-        #      v   v   v   v
-        return 1 + 1 + 4 + size
+        #      |   |   +- Value
+        #      |   |   |
+        #      v   v   v
+        return 1 + 1 + size
       when Opcode::PUSH
-        address = reg_read UInt64, Register::IP
+        address = reg_read UInt32, Register::IP.dword
         size = mem_read UInt32, address + 1
 
         #      +- Opcode
@@ -346,7 +345,6 @@ module VM
 
     # :ditto:
     def reg_write(reg : Register, data : Bytes)
-      invalid_register_access reg unless legal_reg reg
       target = @regs[reg.regcode.to_i32 * 8, reg.bytecount]
       target.to_unsafe.clear reg.bytecount
       data = data[0, target.size] if data.size > target.size
@@ -356,7 +354,6 @@ module VM
 
     # Reads a *type* value from *register*
     def reg_read(x : T.class, reg : Register) forall T
-      invalid_register_access reg unless legal_reg reg
       source = @regs[reg.regcode.to_i32 * 8, reg.bytecount]
 
       # Zero pad values smaller than 8 bytes
@@ -368,7 +365,6 @@ module VM
 
     # Reads all bytes from *reg*
     def reg_read(reg : Register)
-      invalid_register_access reg unless legal_reg reg
       @regs[reg.regcode.to_i32 * 8, reg.bytecount]
     end
 
@@ -402,62 +398,44 @@ module VM
 
     # Pushes *value* onto the stack
     def stack_write(data : Bytes)
-      sp = reg_read UInt64, Register::SP
-      mem_write sp, data
-      sp += data.size
-      reg_write Register::SP, sp
+      sp = reg_read UInt32, Register::SP.dword
+      address = sp - data.size
+      mem_write address, data
+      sp -= data.size
+      reg_write Register::SP.dword, sp
     end
 
     # Pushes *value* onto the stack
     def stack_write(value : T) forall T
-      value = Slice(T).new 1, value
-      size = sizeof(T)
-      ptr = Pointer(UInt8).new value.to_unsafe.address
-      bytes = Bytes.new ptr, size
-      stack_write bytes
+      stack_write get_bytes value
     end
 
     # Reads *count* bytes from the stack
     def stack_peek(count)
-      sp = reg_read UInt64, Register::SP
-      address = sp - count
+      sp = reg_read UInt32, Register::SP.dword
       mem_read count, address
     end
 
     # Reads a *T* value from the stack
     def stack_peek(x : T.class) forall T
-      sp = reg_read UInt64, Register::SP
-      size = sizeof(T)
-      address = sp - size
-      ptr = @memory[address, size].to_unsafe.as(T)
-      ptr[0]
+      sp = reg_read UInt32, Register::SP.dword
+      mem_read T, sp
     end
 
     # Pops *count* bytes off the stack
     def stack_pop(count)
-      sp = reg_read UInt64, Register::SP
-      address = sp - count
-      bytes = mem_read count, address
-      reg_write Register::SP, sp - count
+      sp = reg_read UInt32, Register::SP.dword
+      bytes = mem_read count, sp
+      reg_write Register::SP.dword, sp + count
       bytes
     end
 
     # Pops a *T* value off the stack
     def stack_pop(x : T.class) forall T
-      sp = reg_read UInt64, Register::SP
-      size = sizeof(T)
-      address = sp - size
-      ptr = @memory[address, size].to_unsafe
-      adr = ptr.address
-      ptr = Pointer(T).new adr
-      value = ptr[0]
-      reg_write Register::SP, sp - size
+      sp = reg_read UInt32, Register::SP.dword
+      value = mem_read T, sp
+      reg_write Register::SP.dword, sp + sizeof(T)
       value
-    end
-
-    # Returns true if *reg* is legal
-    def legal_reg(reg : Register)
-      reg.regcode >= 0 && reg.regcode <= 63
     end
 
     # Returns true if *address* is legal
@@ -467,7 +445,7 @@ module VM
 
     # :nodoc:
     private def illegal_memory_access(address)
-      ip = reg_read UInt64, Register::IP
+      ip = reg_read UInt32, Register::IP.dword
       ip = ("0x" + (ip.to_s(16).rjust(8, '0'))).colorize :red
       address = ("0x" + (address.to_s(16).rjust(8, '0'))).colorize :yellow
 
@@ -475,11 +453,6 @@ module VM
         ErrorCode::ILLEGAL_MEMORY_ACCESS,
         "#{ip}: Illegal memory access at #{address}"
       )
-    end
-
-    # :nodoc:
-    private def invalid_register_access(register : Register)
-      raise Error.new ErrorCode::INVALID_REGISTER, "Unknown register: #{register}"
     end
 
     # :nodoc:
@@ -506,12 +479,11 @@ module VM
     # Executes a rpop instruction
     #
     # ```
-    # rpop r0, qword
+    # rpop r0
     # ```
     private def op_rpop(ip)
       reg = Register.new mem_read(UInt8, ip + 1)
-      size = mem_read(UInt32, ip + 2)
-      value = stack_pop size
+      value = stack_pop reg.bytecount
       reg_write reg, value
     end
 
@@ -534,8 +506,7 @@ module VM
     # ```
     private def op_loadi(ip)
       target = Register.new mem_read(UInt8, ip + 1)
-      size = mem_read UInt32, ip + 2
-      value = mem_read size, ip + 6
+      value = mem_read target.bytecount, ip + 2
       reg_write target, value
     end
 
@@ -598,31 +569,29 @@ module VM
     # Executes a load instruction
     #
     # ```
-    # load r0, qword, -20
+    # load r0, -20
     # ```
     private def op_load(ip)
       reg = Register.new mem_read(UInt8, ip + 1)
-      size = mem_read UInt32, ip + 2
-      offset = mem_read(Int64, ip + 6)
-      frameptr = reg_read UInt64, Register::FP
+      offset = mem_read(Int64, ip + 2)
+      frameptr = reg_read UInt32, Register::FP.dword
       address = frameptr + offset
-      value = mem_read size, address
+      value = mem_read reg.bytecount, address
       reg_write reg, value
     end
 
     # Executes a loadr instruction
     #
     # ```
-    # loadr r0, qword, r1
+    # loadr r0, r1
     # ```
     private def op_loadr(ip)
       reg = Register.new mem_read(UInt8, ip + 1)
-      size = mem_read UInt32, ip + 2
-      offset = Register.new mem_read(UInt8, ip + 6)
-      offset = reg_read Int64, offset
-      frameptr = reg_read UInt64, Register::FP
+      offset = Register.new mem_read(UInt8, ip + 2)
+      offset = reg_read Int32, offset
+      frameptr = reg_read UInt32, Register::FP.dword
       address = frameptr + offset
-      value = mem_read size, address
+      value = mem_read reg.bytecount, address
       reg_write reg, value
     end
 
@@ -633,8 +602,8 @@ module VM
     # ```
     private def op_loads(ip)
       size = mem_read UInt32, ip + 1
-      offset = mem_read Int64, ip + 5
-      frameptr = reg_read UInt64, Register::FP
+      offset = mem_read Int32, ip + 5
+      frameptr = reg_read UInt32, Register::FP.dword
       address = frameptr + offset
       value = mem_read size, address
       stack_write value
@@ -647,9 +616,9 @@ module VM
     # ```
     private def op_loadsr(ip)
       size = mem_read UInt32, ip + 1
-      offset = Register.new mem_read UInt8, ip + 2
-      offset = reg_read Int64, offset
-      frameptr = reg_read UInt64, Register::FP
+      offset = Register.new mem_read UInt8, ip + 5
+      offset = reg_read Int32, offset
+      frameptr = reg_read UInt32, Register::FP.dword
       address = frameptr + offset
       value = mem_read size, address
       stack_write value
@@ -661,10 +630,10 @@ module VM
     # store -8, r0
     # ```
     private def op_store(ip)
-      offset = mem_read Int64, ip + 1
-      source = Register.new mem_read(UInt8, ip + 9)
+      offset = mem_read Int32, ip + 1
+      source = Register.new mem_read(UInt8, ip + 5)
       value = reg_read source
-      frameptr = reg_read UInt64, Register::FP
+      frameptr = reg_read UInt32, Register::FP.dword
       address = frameptr + offset
       mem_write address, value
     end
@@ -688,7 +657,7 @@ module VM
     private def op_read(ip)
       target = Register.new mem_read(UInt8, ip + 1)
       source = Register.new mem_read(UInt8, ip + 2)
-      address = reg_read UInt64, source
+      address = reg_read UInt32, source
       value = mem_read target.bytecount, address
       reg_write target, value
     end
@@ -700,8 +669,8 @@ module VM
     # ```
     private def op_readc(ip)
       target = Register.new mem_read(UInt8, ip + 1)
-      address = mem_read UInt64, ip + 2
-      value = mem_read target.bytecount,address
+      address = mem_read UInt32, ip + 2
+      value = mem_read target.bytecount, address
       reg_write target, value
     end
 
@@ -713,7 +682,7 @@ module VM
     private def op_reads(ip)
       size = mem_read UInt32, ip + 1
       source = Register.new mem_read(UInt8, ip + 2)
-      address = reg_read UInt64, source
+      address = reg_read UInt32, source
       value = mem_read size, address
       stack_write value
     end
@@ -725,7 +694,7 @@ module VM
     # ```
     private def op_readcs(ip)
       size = mem_read UInt32, ip + 1
-      address = mem_read UInt64, ip + 5
+      address = mem_read UInt32, ip + 5
       value = mem_read size, address
       stack_write value
     end
@@ -737,7 +706,7 @@ module VM
     # ```
     private def op_write(ip)
       target = Register.new mem_read(UInt8, ip + 1)
-      address = reg_read UInt64, target
+      address = reg_read UInt32, target
       source = Register.new mem_read(UInt8, ip + 2)
       value = reg_read source
       mem_write address, value
@@ -749,8 +718,8 @@ module VM
     # writec 0x500, r1
     # ```
     private def op_writec(ip)
-      address = mem_read UInt64, ip + 1
-      source = Register.new mem_read(UInt8, ip + 9)
+      address = mem_read UInt32, ip + 1
+      source = Register.new mem_read(UInt8, ip + 5)
       value = reg_read source
       mem_write address, value
     end
@@ -762,7 +731,7 @@ module VM
     # ```
     private def op_writes(ip)
       target = Register.new mem_read(UInt8, ip + 1)
-      address = reg_read UInt64, target
+      address = reg_read UInt32, target
       size = mem_read UInt32, ip + 2
       value = stack_pop size
       mem_write address, value
@@ -774,8 +743,8 @@ module VM
     # writecs 0x500, qword
     # ```
     private def op_writecs(ip)
-      address = mem_read UInt64, ip + 1
-      size = mem_read UInt32, ip + 9
+      address = mem_read UInt32, ip + 1
+      size = mem_read UInt32, ip + 5
       value = stack_pop size
       mem_write address, value
     end
@@ -792,8 +761,8 @@ module VM
       target = Register.new mem_read(UInt8, ip + 1)
       size = mem_read UInt32, ip + 2
       source = Register.new mem_read(UInt8, ip + 6)
-      target_adr = reg_read UInt64, target
-      source_adr = reg_read UInt64, source
+      target_adr = reg_read UInt32, target
+      source_adr = reg_read UInt32, source
       value = mem_read size, source_adr
       mem_write target_adr, value
     end
@@ -804,9 +773,9 @@ module VM
     # copyc target, qword, source
     # ```
     private def op_copyc(ip)
-      target = mem_read(UInt64, ip + 1)
-      size = mem_read UInt32, ip + 9
-      source = mem_read(UInt64, ip + 13)
+      target = mem_read(UInt32, ip + 1)
+      size = mem_read UInt32, ip + 5
+      source = mem_read(UInt32, ip + 9)
       value = mem_read size, source
       mem_write target, value
     end
@@ -820,7 +789,7 @@ module VM
       address = mem_read UInt64, ip + 1
       flags = reg_read UInt8, Register::FLAGS.byte
       zero = flags & Flag::ZERO.value
-      reg_write Register::IP, address if zero != 0
+      reg_write Register::IP.dword, address if zero != 0
     end
 
     # Executes a jzr instruction
@@ -832,10 +801,10 @@ module VM
     # ```
     private def op_jzr(ip)
       target = Register.new mem_read(UInt8, ip + 1)
-      address = reg_read UInt64, target
+      address = reg_read UInt32, target
       flags = reg_read UInt8, Register::FLAGS.byte
       zero = flags & Flag::ZERO.value
-      reg_write Register::IP, address if zero != 0
+      reg_write Register::IP.dword, address if zero != 0
     end
 
     # Executes a jmp instruction
@@ -844,8 +813,8 @@ module VM
     # jmp myfunction
     # ```
     private def op_jmp(ip)
-      address = mem_read UInt64, ip + 1
-      reg_write Register::IP, address
+      address = mem_read UInt32, ip + 1
+      reg_write Register::IP.dword, address
     end
 
     # Executes a jmpr instruction
@@ -857,8 +826,8 @@ module VM
     # ```
     private def op_jmpr(ip)
       target = Register.new mem_read(UInt8, ip + 1)
-      address = reg_read UInt64, target
-      reg_write Register::IP, address
+      address = reg_read UInt32, target
+      reg_write Register::IP.dword, address
     end
 
     # Executes a call instruction
@@ -872,21 +841,21 @@ module VM
     # ```
     private def op_call(ip)
       address = mem_read UInt64, ip + 1
-      frameptr = reg_read UInt64, Register::FP
+      frameptr = reg_read UInt32, Register::FP.dword
       return_address = ip + decode_instruction_length(fetch)
 
       # Base address of this stack frame
       # Is a pointer to a qword which will later
       # be populated with the old frame pointer
-      stack_frame_baseadr = reg_read UInt64, Register::SP
+      stack_frame_baseadr = reg_read UInt32, Register::SP.dword
 
       # Push the new stack frame
       stack_write frameptr
       stack_write return_address
 
       # Update FP and IP
-      reg_write Register::FP, stack_frame_baseadr
-      reg_write Register::IP, address
+      reg_write Register::FP.dword, stack_frame_baseadr
+      reg_write Register::IP.dword, address
     end
 
     # Executes a callr instruction
@@ -902,22 +871,22 @@ module VM
     # ```
     private def op_callr(ip)
       target = Register.new mem_read(UInt8, ip + 1)
-      address = reg_read UInt64, target
-      frameptr = reg_read UInt64, Register::FP
+      address = reg_read UInt32, target
+      frameptr = reg_read UInt32, Register::FP.dword
       return_address = ip + decode_instruction_length(fetch)
 
       # Base address of this stack frame
       # Is a pointer to a qword which will later
       # be populated with the old frame pointer
-      stack_frame_baseadr = reg_read UInt64, Register::SP
+      stack_frame_baseadr = reg_read UInt32, Register::SP.dword
 
       # Push the new stack frame
       stack_write frameptr
       stack_write return_address
 
       # Update FP and IP
-      reg_write Register::FP, stack_frame_baseadr
-      reg_write Register::IP, address
+      reg_write Register::FP.dword, stack_frame_baseadr
+      reg_write Register::IP.dword, address
     end
 
     # Executes a ret instruction
@@ -928,16 +897,16 @@ module VM
     private def op_ret(ip)
 
       # Read current stack frame
-      stack_frame_baseadr = reg_read UInt64, Register::FP
-      frame_pointer = mem_read UInt64, stack_frame_baseadr
-      return_address = mem_read UInt64, stack_frame_baseadr + 8
+      stack_frame_baseadr = reg_read UInt32, Register::FP.dword
+      frame_pointer = mem_read UInt32, stack_frame_baseadr
+      return_address = mem_read UInt32, stack_frame_baseadr + 4
       argument_count = mem_read UInt32, stack_frame_baseadr - 4
       stack_pointer = stack_frame_baseadr - (4 + argument_count)
 
       # Restore old state
-      reg_write Register::SP, stack_pointer
-      reg_write Register::FP, frame_pointer
-      reg_write Register::IP, return_address
+      reg_write Register::SP.dword, stack_pointer
+      reg_write Register::FP.dword, frame_pointer
+      reg_write Register::IP.dword, return_address
     end
 
     # Executes a syscall instruction
@@ -949,20 +918,19 @@ module VM
     # ```
     private def op_syscall(ip)
       id = Syscall.new stack_pop UInt16
-      perform_syscall id, reg_read(UInt64, Register::SP)
+      perform_syscall id, reg_read(UInt32, Register::SP.dword)
     end
 
     # Syscall router
-    private def perform_syscall(id : Syscall, stackptr : UInt64)
+    private def perform_syscall(id : Syscall, stackptr : UInt32)
       case id
       when Syscall::EXIT
         exit_code = stack_pop UInt8
-        reg_write Register::R0, exit_code
+        reg_write Register::R0.byte, exit_code
         @running = false
       when Syscall::SLEEP
-        millis = stack_pop UInt32
-        millis = millis.to_f64
-        sleep millis / 1000
+        seconds = stack_pop Float64
+        sleep seconds
       else
         invalid_syscall id
       end

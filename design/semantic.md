@@ -229,8 +229,7 @@ syscall id onto the stack. The syscall id is a `word`.
 | Name       | Opcode | Arguments | Description                                                 |
 |------------|--------|-----------|-------------------------------------------------------------|
 | `exit`     | `0x00` | code      | Halt the machine with `code` as the exit code (single byte) |
-| `debugger` | `0x01` | arg       | Breakpoint for debuggers. `arg` is a `dword` value          |
-| `sleep`    | `0x02` | millis    | Sleeps for `millis` milliseconds. `millis` is a `dword`     |
+| `sleep`    | `0x02` | seconds   | Sleeps for `seconds`. `seconds` is a `float64`              |
 
 Return values of syscalls are pushed onto the stack. Different syscalls may produce different return values.
 
