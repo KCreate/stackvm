@@ -84,10 +84,10 @@ The program below calculates the sum of `25` and `45` and saves the result in th
     rpop return_value           ; pop the result into the return_value register
 
 .label _add
-    load calc1, -12             ; load the first argument into calc1
-    load calc2, -8              ; load the second argument into calc2
+    load calc1, 12              ; load the first argument into calc1
+    load calc2, 8               ; load the second argument into calc2
     add calc1, calc1, calc2     ; add calc2 to calc1
-    store calc1, -16            ; write to return value
+    store calc1, 16             ; write to return value
     ret                         ; return from the subroutine
 ```
 
@@ -97,14 +97,14 @@ Below is a diagram of how the stack is organized when entering the `add` block.
 +- High addresses
 |
 +-----------------------------+
-| Return value : 8 Bytes      | <- Return value
+| Return value : 4 Bytes      | <- Return value
 +-----------------------------+
-| Argument 1 : 8 Bytes        | <-- Function arguments
-| Argument 2 : 8 Bytes        | <-/
+| Argument 1 : 4 Bytes        | <-- Function arguments
+| Argument 2 : 4 Bytes        | <-/
 | Argument count : 4 Bytes    | <- How many bytes are arguments?
 +-----------------------------+
-| Old Frame pointer : 8 Bytes | <- Stack frame
-| Return address : 8 Bytes    |
+| Return address : 4 Bytes    |
+| Old Frame pointer : 4 Bytes | <- Stack frame
 +-----------------------------+
 |
 +- Low addresses
