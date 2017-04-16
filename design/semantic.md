@@ -13,13 +13,15 @@ For the specification on binary encoding, see the [encoding.md](./encoding.md) f
 
 ## Error codes
 
-| Name                    | Value  | Description                                                       |
-|-------------------------|--------|-------------------------------------------------------------------|
-| `REGULAR_EXIT`          | `0x00` | The machine exited normally                                       |
-| `ILLEGAL_MEMORY_ACCESS` | `0x01` | Memory read or write is out-of-bounds                             |
-| `INVALID_INSTRUCTION`   | `0x02` | Unknown instruction                                               |
-| `INVALID_REGISTER`      | `0x03` | Unknown register                                                  |
-| `INVALID_SYSCALL`       | `0x05` | Unknown syscall id                                                |
+| Name                    | Value  | Description                           |
+|-------------------------|--------|---------------------------------------|
+| `REGULAR_EXIT`          | `0x00` | The machine exited normally           |
+| `ILLEGAL_MEMORY_ACCESS` | `0x01` | Memory read or write is out-of-bounds |
+| `INVALID_INSTRUCTION`   | `0x02` | Unknown instruction                   |
+| `INVALID_REGISTER`      | `0x03` | Unknown register                      |
+| `INVALID_SYSCALL`       | `0x04` | Unknown syscall id                    |
+| `EXECUTABLE_TOO_BIG`    | `0x05` | Executable won't fit into memory      |
+| `INVALID_EXECUTABLE`    | `0x06` | Executable is invalid                 |
 
 ## Registers
 

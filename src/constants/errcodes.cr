@@ -14,6 +14,8 @@ module Constants
     INVALID_INSTRUCTION     = 0x2
     INVALID_REGISTER        = 0x3
     INVALID_SYSCALL         = 0x4
+    EXECUTABLE_TOO_BIG      = 0x5
+    INVALID_EXECUTABLE      = 0x6
   end
 
 end
