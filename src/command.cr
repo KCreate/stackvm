@@ -17,7 +17,7 @@ module StackVM
       end
 
       case command = arguments.shift
-      # when "run" then run arguments
+      when "run" then run arguments
       when "build" then build arguments
       when "help" then help
       when "version" then version
@@ -29,7 +29,6 @@ module StackVM
     # Runs an executable
     def run(arguments : Array(String))
       filename = ""
-      memory_size = 2 ** 16 # 65'536 bytes
       debug_mode = false
 
       should_run = true
@@ -37,22 +36,6 @@ module StackVM
         parser.banner = "Usage: run filename [switches]"
         parser.on "-h", "--help", "show help" { puts parser; should_run = false }
         parser.on "-d", "--debugger", "enable debugger" { debug_mode = true }
-        parser.on "-m SIZE", "--memory=SIZE", "set memory size" do |arg|
-          arg = arg.to_i32?
-
-          unless arg.is_a? Int32
-            error "could not parse: #{arg}"
-            should_run = false
-            next
-          end
-
-          if arg <= 0
-            error "memory size can't be smaller than 0"
-            should_run = false
-          end
-
-          memory_size = arg
-        end
         parser.invalid_option { |opt| error "unknown option: #{opt}"; should_run = false }
         parser.unknown_args do |args|
           filename = args.shift? || ""
@@ -81,16 +64,16 @@ module StackVM
         io.read_fully bytes
       end
 
-      machine = VM::Machine.new memory_size
+      machine = VM::Machine.new
       machine.flash bytes
 
-      if debug_mode
-        dbg = VM::Debugger.new machine
-        dbg.start
-      else
-        machine.start
-        machine.clean
-      end
+      #if debug_mode
+        #dbg = VM::Debugger.new machine
+        #dbg.start
+      #else
+        #machine.start
+        #machine.clean
+      #end
     end
 
     # Runs the build command

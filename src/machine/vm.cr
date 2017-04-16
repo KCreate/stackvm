@@ -3,21 +3,43 @@ require "../constants/constants.cr"
 module VM
   include Constants
 
-  MEMORY_SIZE = 2 ** 16 # default memory size
+  MEMORY_SIZE = 8_000_000
+
+  struct Header
+    property valid : Bool
+    property magic : StaticArray(UInt8, 4)
+    property entry_addr : UInt32
+    property load_table : Array(LoadTableEntry)
+
+    def initialize
+      @valid = true
+      @magic = StaticArray(UInt8, 4).new 0_u8
+      @entry_addr = 0_u32
+      @load_table = [] of LoadTableEntry
+    end
+  end
+
+  struct LoadTableEntry
+    property offset : UInt32
+    property size : UInt32
+    property address : UInt32
+
+    def initialize
+      @offset = 0_u32
+      @size = 0_u32
+      @address = 0_u32
+    end
+  end
 
   class Machine
     property memory : Bytes
     property regs : Bytes
-    property executable_size : Int64
     property running : Bool
-    property debugger_signal : Proc(UInt64, Void)?
 
-    def initialize(memory_size = MEMORY_SIZE)
-      @executable_size = 0_i64
-      @memory = Machine.get_shared_memory_region "machine.memory", memory_size
+    def initialize
+      @memory = Machine.get_shared_memory_region "machine.memory", MEMORY_SIZE
       @regs = Bytes.new 64 * 8 # 64 registers of 8 bytes each
       @running = false
-      @debugger_signal = nil
     end
 
     # Returns a new shared memory region for *filename* and *size*
@@ -52,28 +74,94 @@ module VM
       LibC.munmap(ptr, @memory.size)
     end
 
-    # Set the machines debugger signal handler
-    def debugger_signal(&block : Proc(UInt64, Void))
-      @debugger_signal = block
+    # Extracts header information from *data*
+    def read_header(data : Bytes)
+      header = Header.new
+
+      # Check data size
+      if data.size < 12
+        header.valid = false
+        return header
+      end
+
+      # Read magic numbers
+      header.magic[0] = data[0]
+      header.magic[1] = data[1]
+      header.magic[2] = data[2]
+      header.magic[3] = data[3]
+
+      # Check magic numbers for validity (NICE in ascii codes)
+      unless header.magic[0] == 0x4e && header.magic[1] == 0x49 &&
+             header.magic[2] == 0x43 && header.magic[3] == 0x45
+        header.valid = false
+        return header
+      end
+
+      # Read entry address
+      header.entry_addr = (data + 4).to_unsafe.as(UInt32*)[0]
+
+      # Read the size of the load table
+      load_table_entry_count = (data + 8).to_unsafe.as(UInt32*)[0]
+      load_table_bytesize = load_table_entry_count * 3
+
+      # Check that there are enough bytes for all load table entries
+      if data.size < 12 + load_table_bytesize
+        header.valid = false
+        return header
+      end
+
+      # Extract all entries from the load table
+      load_table_bytes = (data + 12).to_unsafe.as(LoadTableEntry*)
+      load_table_entry_count.times do |index|
+        header.load_table << load_table_bytes[index]
+      end
+
+      # Check that all segments point to valid memory segments
+      header.load_table.each do |entry|
+        offset, size, address = entry.offset, entry.size, entry.address
+        offset_end = offset + size
+
+        if offset_end >= data.size
+          header.valid = false
+          return header
+        end
+      end
+
+      header
     end
 
     # Resets and copies *data* into the machine's memory
     #
     # Raises if *data* doesn't fit into the machine's memory
     def flash(data : Bytes)
-      if data.bytesize > @memory.size
+      header = read_header data
+
+      # Check invalid header
+      unless header.valid
         raise Error.new(
-          ErrorCode::OUT_OF_MEMORY,
-          "Trying to write #{data.bytesize} into #{@memory.size} bytes of memory"
+          ErrorCode::INVALID_EXECUTABLE,
+          "Malformed executable header"
         )
       end
 
-      reset_memory
-      data.copy_to @memory
+      # Initialize registers
+      @regs.to_unsafe.clear 64
+      reg_write Register::SP.dword, 0x003fffff # starting address of the stack
+      reg_write Register::FP.dword, 0x007a1200 # out-of-bounds, causes crash on access
+      reg_write Register::IP.dword, header.entry_addr
 
-      @executable_size = data.bytesize.to_i64
-      reg_write Register::SP, @executable_size
-      reg_write Register::FP, @executable_size
+      # Clear out memory
+      @memory.to_unsafe.clear MEMORY_SIZE
+
+      # Copy all segments to their addresses in machine memory
+      header.load_table.each do |entry|
+        next if entry.size == 0 # skip empty segments
+
+        segment = data[entry.offset, entry.size]
+        mem_write entry.address, segment
+
+        puts "writing #{entry.size} bytes to address #{entry.address}"
+      end
 
       self
     end
@@ -83,19 +171,6 @@ module VM
       0.upto(@memory.bytesize - 1) do |i|
         @memory[i] = 0_u8
       end
-
-      self
-    end
-
-    # Grows the machine's memory capacity to a given size
-    #
-    # Does nothing if *size* is smaller than the machine's memory capacity
-    def grow(size)
-      return self if size <= @memory.size
-
-      new_mem = Machine.get_shared_memory_region "machine.memory", size
-      @memory.copy_to new_mem
-      @memory = new_mem
 
       self
     end
@@ -272,7 +347,7 @@ module VM
     # :ditto:
     def reg_write(reg : Register, data : Bytes)
       invalid_register_access reg unless legal_reg reg
-      target = @regs[reg.regcode.to_i64 * 8, reg.bytecount]
+      target = @regs[reg.regcode.to_i32 * 8, reg.bytecount]
       target.to_unsafe.clear reg.bytecount
       data = data[0, target.size] if data.size > target.size
       target.copy_from data
@@ -282,7 +357,7 @@ module VM
     # Reads a *type* value from *register*
     def reg_read(x : T.class, reg : Register) forall T
       invalid_register_access reg unless legal_reg reg
-      source = @regs[reg.regcode.to_i64 * 8, reg.bytecount]
+      source = @regs[reg.regcode.to_i32 * 8, reg.bytecount]
 
       # Zero pad values smaller than 8 bytes
       bytes = Bytes.new 8
@@ -294,7 +369,7 @@ module VM
     # Reads all bytes from *reg*
     def reg_read(reg : Register)
       invalid_register_access reg unless legal_reg reg
-      @regs[reg.regcode.to_i64 * 8, reg.bytecount]
+      @regs[reg.regcode.to_i32 * 8, reg.bytecount]
     end
 
     # Writes *data* to *address*
@@ -398,13 +473,8 @@ module VM
 
       raise Error.new(
         ErrorCode::ILLEGAL_MEMORY_ACCESS,
-        "#{ip}: Illegal memory access at #{address} (memory size: #{@memory.size} bytes)"
+        "#{ip}: Illegal memory access at #{address}"
       )
-    end
-
-    # :nodoc:
-    private def bad_register_access(register : Register)
-      raise Error.new ErrorCode::BAD_REGISTER_ACCESS, "Bad register access: #{register}"
     end
 
     # :nodoc:
@@ -889,11 +959,6 @@ module VM
         exit_code = stack_pop UInt8
         reg_write Register::R0, exit_code
         @running = false
-      when Syscall::DEBUGGER
-        argument = stack_pop UInt64
-        @debugger_signal.try &.call(argument)
-      when Syscall::GROW
-        grow @memory.size * 2
       when Syscall::SLEEP
         millis = stack_pop UInt32
         millis = millis.to_f64
