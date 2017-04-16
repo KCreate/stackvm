@@ -169,6 +169,54 @@ module StackVM
 
             puts "  #{offset}  #{size}  #{address}"
           end
+
+          overlapping_segments = [] of {LoadTableEntry, LoadTableEntry}
+          segments = [] of LoadTableEntry
+          builder.load_table.each do |entry|
+            adr_start = entry.address
+            adr_end = adr_start + entry.size
+
+            segments.each do |segment|
+              seg_start = segment.address
+              seg_end = seg_start + segment.size
+              if adr_end > seg_start && adr_start < seg_end
+                overlapping_segments << {entry, segment}
+              end
+            end
+
+            segments << entry
+          end
+
+          if overlapping_segments.size > 0
+            puts "\n"
+            warning "There are overlapping segments!"
+
+            overlapping_segments.each do |(left, right)|
+              left_start = left.address
+              left_end = left_start + left.size
+
+              right_start = right.address
+              right_end = right_start + right.size
+
+              left_start = render_hex left_start, 8, :yellow
+              left_end = render_hex left_end, 8, :yellow
+              right_start = render_hex right_start, 8, :yellow
+              right_end = render_hex right_end, 8, :yellow
+
+              warning <<-TEXT
+              Overlap:
+                Lower Segment:
+                Start: #{left_start}
+                End:   #{left_end}
+                Labels: #{offsets[left.address]?.try &.join ", "}
+
+                Upper Segment:
+                Start: #{right_start}
+                End:   #{right_end}
+                Labels: #{offsets[right.address]?.try &.join ", "}
+              TEXT
+            end
+          end
         end
 
         bytes = result.to_slice
