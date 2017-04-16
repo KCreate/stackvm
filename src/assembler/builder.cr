@@ -15,6 +15,9 @@ module Assembler
 
   class Builder
 
+    # Allows short-hand access to opcode values
+    include_enum Opcode
+
     # Output to which the generated executable is written
     property output : IO::Memory
 
@@ -59,6 +62,49 @@ module Assembler
 
       # Default load entry
       add_load_entry 0x00
+
+      # Default size specifiers
+      @aliases["byte"] = IntegerLiteral.new 1
+      @aliases["word"] = IntegerLiteral.new 2
+      @aliases["dword"] = IntegerLiteral.new 4
+      @aliases["qword"] = IntegerLiteral.new 8
+      @aliases["float32"] = IntegerLiteral.new 4
+      @aliases["float64"] = IntegerLiteral.new 8
+      @aliases["bool"] = IntegerLiteral.new 1
+      @aliases["opcode"] = IntegerLiteral.new 1
+      @aliases["regcode"] = IntegerLiteral.new 1
+      @aliases["address"] = IntegerLiteral.new 4
+      @aliases["offset"] = IntegerLiteral.new 4
+
+      # Default register names
+      {% for name, code in Register.constants %}
+        %reg = Register::{{name}}
+        @aliases["{{name.downcase}}"] = IntegerLiteral.new %reg.dword
+        @aliases["{{name.downcase}}q"] = IntegerLiteral.new %reg.qword
+        @aliases["{{name.downcase}}d"] = IntegerLiteral.new %reg.dword
+        @aliases["{{name.downcase}}w"] = IntegerLiteral.new %reg.word
+        @aliases["{{name.downcase}}b"] = IntegerLiteral.new %reg.byte
+      {% end %}
+
+      # Register opcodes
+      {% for name, code in Opcode.constants %}
+        @aliases["{{name.downcase}}"] = IntegerLiteral.new {{code}}
+      {% end %}
+
+      # Error codes
+      {% for name, code in ErrorCode.constants %}
+        @aliases["{{name.downcase}}"] = IntegerLiteral.new {{code}}
+      {% end %}
+
+      # Syscalls
+      {% for name, code in Syscall.constants %}
+        @aliases["{{name.downcase}}"] = IntegerLiteral.new {{code}}
+      {% end %}
+
+      # Different flags for some values
+      {% for name, code in Flag.constants %}
+        @aliases["f_{{name.downcase}}"] = IntegerLiteral.new {{code}}
+      {% end %}
     end
 
     def build(filename, source)
@@ -92,6 +138,8 @@ module Assembler
           size = encode_size stat.size
           value = encode_value size, stat.value
           write value
+        when Instruction
+          write_instruction stat
         end
       end
     end
@@ -153,6 +201,88 @@ module Assembler
         value.raise "Bug: Unknown label #{value.value}"
       else
         value.raise "Bug: Unknown node type #{value.class}"
+      end
+    end
+
+    # :nodoc:
+    private macro check_args(bytecounts = [] of Int32)
+      assert_count instruction, {{bytecounts.size}}
+
+      {% for size, index in bytecounts %}
+        write encode_value {{size}}, instruction.arguments[{{index}}]
+      {% end %}
+    end
+
+    # :nodoc:
+    private def assert_count(instruction, count)
+      name = instruction.name
+      arg_count = instruction.arguments.size
+      instruction.raise "#{name} expected #{count} arguments, got #{arg_count}" if arg_count != count
+    end
+
+    # Encodes an instruction node
+    def write_instruction(instruction : Instruction)
+      opcode = instruction.name.value
+      opcode = Opcode.parse opcode
+
+      # Write the opcode to the instruction stream
+      write Bytes.new 1 { opcode.value }
+
+      # Validate and write all instruction arguments
+      case opcode
+      when RPUSH    then check_args [1]
+      when RPOP     then check_args [1]
+      when MOV      then check_args [1, 1]
+      when RST      then check_args [1]
+      when ADD, SUB, MUL, DIV, IDIV, REM, IREM  then check_args [1, 1, 1]
+      when FADD, FSUB, FMUL, FDIV, FREM, FEXP   then check_args [1, 1, 1]
+      when CMP, LT, GT, ULT, UGT                then check_args [1, 1, 1]
+      when SHR, SHL, AND, XOR, NAND, OR         then check_args [1, 1, 1]
+      when NOT      then check_args [1, 1]
+      when LOAD     then check_args [1, 4]
+      when LOADR    then check_args [1, 1]
+      when LOADS    then check_args [4, 4]
+      when LOADSR   then check_args [4, 1]
+      when STORE    then check_args [4, 1]
+      when READ     then check_args [1, 1]
+      when READC    then check_args [1, 4]
+      when READS    then check_args [4, 1]
+      when READCS   then check_args [4, 4]
+      when WRITE    then check_args [1, 1]
+      when WRITEC   then check_args [4, 1]
+      when WRITES   then check_args [1, 4]
+      when WRITECS  then check_args [4, 4]
+      when COPY     then check_args [1, 4, 1]
+      when COPYC    then check_args [4, 4, 4]
+      when JZ       then check_args [4]
+      when JZR      then check_args [1]
+      when JMP      then check_args [4]
+      when JMPR     then check_args [1]
+      when CALL     then check_args [4]
+      when CALLR    then check_args [1]
+      when RET      then check_args
+      when NOP      then check_args
+      when SYSCALL  then check_args
+      when PUSH
+        assert_count instruction, 2
+
+        size = instruction.arguments[0]
+        value = instruction.arguments[1]
+
+        size_bytes = encode_size size
+        value_bytes = encode_value size_bytes, value
+
+        write encode_value 4, size
+        write value_bytes
+      when LOADI
+        assert_count instruction, 2
+
+        reg_bytes = encode_value 1, instruction.arguments[0]
+        reg = Register.new get_casted_bytes UInt8, reg_bytes
+        value = encode_value reg.bytecount, instruction.arguments[1]
+
+        write reg_bytes
+        write value
       end
     end
 

@@ -64,16 +64,6 @@ module Constants
 
     NOP         # 0x35 -  53
     SYSCALL     # 0x36 -  54
-
-    def self.from(value : String)
-      {% for name in Opcode.constants %}
-        if value == "{{name.downcase}}"
-          return Opcode::{{name}}
-        end
-      {% end %}
-
-      return Opcode::NOP
-    end
   end
 
   # Lookup table for instruction lengths

@@ -46,16 +46,6 @@ module Constants
         0
       end
     end
-
-    def self.from(value : String)
-      {% for name in Register.constants %}
-        if value == "{{name.downcase}}"
-          return Register::{{name}}
-        end
-      {% end %}
-
-      return Register.new 255_u8
-    end
   end
 
 end

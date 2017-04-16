@@ -11,3 +11,11 @@ class String
     }.join "\n"
   end
 end
+
+# Includes all constants inside an enum into the current
+# scope.
+macro include_enum(const)
+  {% for name in const.resolve.constants %}
+    {{name}} = {{const}}::{{name}}
+  {% end %}
+end

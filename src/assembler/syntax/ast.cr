@@ -159,7 +159,8 @@ module Assembler
   class IntegerLiteral < Atomic
     getter value : Int64
 
-    def initialize(@value)
+    def initialize(value)
+      @value = value.to_i64
     end
 
     def to_s(io)

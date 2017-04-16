@@ -1,9 +1,9 @@
-.include "constants.asm"
+.org 0x40
+.label foo
 
-.def VRAM_ADDR 0x400
+.org 0x20
+.label bar
 
-.db a qword 255
-
-.org VRAM_ADDR
-
-.db b qword 255
+.org 0x00
+loadi r0, foo
+loadi r0, bar
