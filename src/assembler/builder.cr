@@ -36,10 +36,6 @@ module Assembler
     # 2 - Address to which it should be loaded in memory
     property load_table : Array(LoadTableEntry)
 
-    # The address which is written into the *entry_addr* field
-    # of the executables header section
-    property entry_adr : Int32
-
     # Builds *source*
     def self.build(filename, source)
       builder = Builder.new
@@ -47,10 +43,10 @@ module Assembler
       begin
         builder.build filename, source
       rescue e : Exception
-        yield e, Bytes.new 0
+        yield e, Bytes.new(0), builder
       end
 
-      yield nil, builder.encode_full
+      yield nil, builder.encode_full, builder
     end
 
     def initialize
@@ -58,7 +54,6 @@ module Assembler
       @offsets = {} of String => Int32
       @aliases = {} of String => Atomic
       @load_table = [] of LoadTableEntry
-      @entry_adr = -1
 
       # Default load entry
       add_load_entry 0x00
@@ -321,8 +316,7 @@ module Assembler
 
       # Get the current load entry
       entry = @load_table[-1]
-      offset = entry.offset + entry.size
-      @offsets[label.value] = offset
+      @offsets[label.value] = entry.address + entry.size
     end
 
     # Register a new alias

@@ -97,12 +97,14 @@ module StackVM
     def build(arguments : Array(String))
       filename = ""
       output = "out.bc"
+      stats = false
 
       should_run = true
       OptionParser.parse arguments do |parser|
         parser.banner = "Usage: build filename [switches]"
         parser.on "-o PATH", "--out=PATH", "set name of output file" { |name| output = name }
         parser.on "-h", "--help", "show help" { puts parser; should_run = false }
+        parser.on "-s", "--stats", "show stats" { stats = true }
         parser.invalid_option { |opt| error("unknown option: #{opt}"); should_run = false }
         parser.unknown_args do |args|
           filename = args.shift? || ""
@@ -131,22 +133,48 @@ module StackVM
       content = File.read filename
       content = IO::Memory.new content
 
-      Builder.build path, content do |err, result|
+      Builder.build path, content do |err, result, builder|
         if err
           error err
           return
         end
 
-        success "Built", "#{output} #{result.size} bytes"
+        if stats
+          success "Built", "#{output} #{result.size} bytes"
+
+          entry_addr = builder.offsets["entry_addr"]? || 0
+          success "Entry Address", render_hex entry_addr, 8, :yellow
+          success "Offset Table", "#{builder.offsets.size} entries"
+
+          offsets = {} of Int32 => Array(String)
+          builder.offsets.each do |key, value|
+            (offsets[value] ||= [] of String) << key
+          end
+
+          offsets.each_key.to_a.sort.each do |key|
+            labels = offsets[key]
+            offset = render_hex key, 8, :yellow
+            puts "  #{offset}: #{labels.join ", "}"
+          end
+
+          puts "\n"
+
+          success "Load Table", "#{builder.load_table.size} entries"
+
+          puts "  Offset      Size        Address"
+          builder.load_table.each do |entry|
+            offset = render_hex entry.offset, 8, :yellow
+            size = render_hex entry.size, 8, :yellow
+            address = render_hex entry.address, 8, :yellow
+
+            puts "  #{offset}  #{size}  #{address}"
+          end
+        end
+
         bytes = result.to_slice
 
-        if output == "-"
-          STDOUT.write bytes
-          STDOUT.flush
-        else
-          File.open output, "w" do |fd|
-            fd.write bytes
-          end
+        File.open output, "w" do |fd|
+          fd.write bytes
         end
       end
     end
@@ -165,6 +193,12 @@ module StackVM
 
     def version
       puts "StackVM Assembler v0.1.0"
+    end
+
+    # Pretty print a number in hexadecimal
+    private def render_hex(num, length, color)
+      num = num.to_s(16).rjust(length, '0')
+      num = ("0x" + num).colorize(color)
     end
 
     private def error(message)
