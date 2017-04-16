@@ -34,7 +34,7 @@ For the specification on binary encoding, see the [encoding.md](./encoding.md) f
 | `flags`        | Flags register      |
 
 - `ip` holds a pointer to the current instruction
-- `sp` holds a pointer to the first byte above the stack
+- `sp` holds a pointer to the top-most item on the stack
 - `fp` holds a pointer to the base of the current stack-frame
 - `flags` each bit is a specific flag that can be set by other instructions
 
@@ -80,9 +80,6 @@ mov r0b, r0w
 ```
 
 ## Memory
-
-The machine can be initialized with a variable amount of memory. The stack grows towards high
-addresses.
 
 Memory layout is described in the [encoding](./encoding.md) doc.
 

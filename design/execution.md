@@ -42,7 +42,7 @@ crash when accessed.
 
 - `r0` to `r59` are zero-initialized
 - `ip` gets set to the value of the `entry_addr` column in the program header.
-- `sp` is initialized to `0x003fffff`
+- `sp` is initialized to `0x00400000`
 - `fp` is intiialized to `0x007a1200`
 - `flags` is zero-intialized
 
