@@ -301,7 +301,7 @@ module Assembler
       return bytes[0, size]
     end
 
-    # Return a
+    # Return a *T* value created from *source*
     def get_casted_bytes(x : T.class, source : Bytes) forall T
       bytes = get_trimmed_bytes sizeof(T), source
       ptr = Pointer(T).new bytes.to_unsafe.address
