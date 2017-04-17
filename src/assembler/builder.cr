@@ -188,7 +188,11 @@ module Assembler
           return encode_size node
         end
 
-        size.raise "Expected label to be a definition"
+        if @offsets.has_key? size.value
+          size.raise "Expected label to be a definition"
+        else
+          size.raise "Unknown label #{size.value}"
+        end
       else
         size.raise "Bug: Unknwon node type #{size.class}"
       end
