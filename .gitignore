@@ -3,6 +3,7 @@
 /bin/
 /.crystal/
 /.shards/
+shard.lock
 *.swp
 .DS_Store
 .git

@@ -4,6 +4,6 @@ version: 0.1.0
 authors:
   - Leonard Schuetz <leni.schuetz@me.com>
 
-crystal: 0.20.4
+crystal: 0.21.1
 
 license: MIT
