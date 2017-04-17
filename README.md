@@ -13,7 +13,7 @@ The machine puts it's main memory section into a memory-mapped file in the curre
 where the process was started. The virtual display can load this file and will display the
 designated VRAM section of the machine's memory as a live video feed.
 
-# Virtual Display
+# Virtual Display
 
 ![Virtual Display](./design/images/virtual-display.gif)
 
