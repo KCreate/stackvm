@@ -67,13 +67,13 @@ module StackVM
       machine = VM::Machine.new
       machine.flash bytes
 
-      #if debug_mode
-        #dbg = VM::Debugger.new machine
-        #dbg.start
-      #else
-        #machine.start
-        #machine.clean
-      #end
+      if debug_mode
+        dbg = VM::Debugger.new machine
+        dbg.start
+      else
+        machine.start
+        machine.clean
+      end
     end
 
     # Runs the build command

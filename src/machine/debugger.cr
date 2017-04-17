@@ -4,19 +4,12 @@ require "../constants/constants.cr"
 require "./vm.cr"
 
 module VM
+  include Constants
 
   class Debugger
     property machine : Machine
 
-    # Wether the machine is running freely
-    # or if the cycles are controlled by the debugger
-    property draining : Bool
-
     def initialize(@machine)
-      @machine.debugger_signal do |arg|
-        handle_debugger_signal arg
-      end
-      @draining = false
     end
 
     # Start the debugger
@@ -48,8 +41,6 @@ module VM
         print_help
       when "s", "stack"
         print_stack
-      when "e", "exdump"
-        print_executable
       when "status"
         print_status
       when "c", "cycle"
@@ -62,7 +53,6 @@ module VM
       when "i", "instruction"
         print_instruction
       when "drain"
-        @draining = true
         @machine.start
       when "m", "memory"
         start = args.shift?
@@ -100,18 +90,9 @@ module VM
           return error "address is out of bounds (memorysize: #{memsize})"
         end
 
-        @machine.reg_write Register::IP, adr.to_u64
+        @machine.reg_write Register::IP.dword, adr
       else
         error "unknown command: #{name}"
-      end
-    end
-
-    # Handles a signal sent by the machine
-    private def handle_debugger_signal(arg)
-      puts "received #{arg} from machine"
-      if @draining
-        @draining = false
-        @machine.running = false
       end
     end
 
@@ -122,10 +103,10 @@ module VM
 
     # Prints the stack
     private def print_stack
-      base = @machine.executable_size
-      sp = @machine.reg_read UInt64, Register::SP
-      size = sp - base
-      memory = @machine.memory[base, size]
+      sp = @machine.reg_read UInt32, Register::SP.dword
+      size = STACK_BASE - sp
+      size = 0 if size < 0
+      memory = @machine.memory[sp, size]
       puts memory.hexdump
     end
 
@@ -134,17 +115,12 @@ module VM
 
       # check enough memory
       if start + count > @machine.memory.size - 1
-        address = render_hex start, 16, :yellow
+        address = render_hex start, 8, :yellow
         return error "could not read #{count} bytes at #{address}"
       end
 
       bytes = @machine.memory[start, count]
       puts bytes.hexdump
-    end
-
-    # Prints the executable
-    private def print_executable
-      puts @machine.memory[0, @machine.executable_size].hexdump
     end
 
     # Prints all registers
@@ -192,20 +168,17 @@ module VM
 
     # Prints machine status information
     private def print_status
-      ip = @machine.reg_read UInt64, Register::IP
-      ip = render_hex ip, 16, :yellow
-      sp = @machine.reg_read UInt64, Register::SP
-      sp = render_hex sp, 16, :yellow
-      fp = @machine.reg_read UInt64, Register::FP
-      fp = render_hex fp, 16, :yellow
-      memory_size = @machine.memory.size
-      memory_size = render_hex memory_size, 16, :yellow
+      ip = @machine.reg_read UInt32, Register::IP.dword
+      ip = render_hex ip, 8, :yellow
+      sp = @machine.reg_read UInt32, Register::SP.dword
+      sp = render_hex sp, 8, :yellow
+      fp = @machine.reg_read UInt32, Register::FP.dword
+      fp = render_hex fp, 8, :yellow
 
       puts <<-STATUS
         instruction pointer: #{ip}
         stack pointer:       #{sp}
         frame pointer:       #{fp}
-        memory_size:         #{memory_size}
         running:             #{@machine.running}
       STATUS
     end
@@ -221,20 +194,17 @@ module VM
       r, registers                       print the contents of all registers
       c, cycle        n                  run *n* cpu cycles (default 1)
       j, jump         adr                jumps to *adr*
-      e, exdump                          dump the executable
       m, memory       start, count       print *count* bytes starting at *start*
       i, instruction                     print the current instruction
       status                             print machine status information
       drain                              run the machine in normal mode
-                                           breaks when the debugger receives a signal or
-                                           the machine terminates (syscall exit)
       HELP
     end
 
     # Returns the prompt
     private def prompt
-      address = render_hex @machine.reg_read(UInt64, Register::IP), 8, :red
-      frameptr = render_hex @machine.reg_read(UInt64, Register::FP), 8, :green
+      address = render_hex @machine.reg_read(UInt32, Register::IP.dword), 8, :red
+      frameptr = render_hex @machine.reg_read(UInt32, Register::FP.dword), 8, :green
       running = render_hex((@machine.running ? 1 : 0), 1, :magenta)
 
       "[#{running}:#{frameptr}:#{address}]> "

@@ -146,8 +146,8 @@ module VM
 
       # Initialize registers
       @regs.to_unsafe.clear 64
-      reg_write Register::SP.dword, 0x003fffff # starting address of the stack
-      reg_write Register::FP.dword, 0x007a1200 # out-of-bounds, causes crash on access
+      reg_write Register::SP.dword, STACK_BASE # starting address of the stack
+      reg_write Register::FP.dword, MEMORY_SIZE # out-of-bounds, causes crash on access
       reg_write Register::IP.dword, header.entry_addr
 
       # Clear out memory
