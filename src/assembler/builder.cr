@@ -68,8 +68,7 @@ module Assembler
       @aliases["word"] = IntegerLiteral.new 2
       @aliases["dword"] = IntegerLiteral.new 4
       @aliases["qword"] = IntegerLiteral.new 8
-      @aliases["float32"] = IntegerLiteral.new 4
-      @aliases["float64"] = IntegerLiteral.new 8
+      @aliases["float"] = IntegerLiteral.new 8
       @aliases["bool"] = IntegerLiteral.new 1
       @aliases["opcode"] = IntegerLiteral.new 1
       @aliases["regcode"] = IntegerLiteral.new 1
@@ -220,13 +219,7 @@ module Assembler
         bytes = get_bytes value.value
         return get_trimmed_bytes size, bytes
       when FloatLiteral
-        if size == 4
-          value = value.value.to_i32
-        else
-          value = value.value
-        end
-
-        bytes = get_bytes value
+        bytes = get_bytes value.value
         return get_trimmed_bytes size, bytes
       when StringLiteral
         return get_trimmed_bytes size, value.value.to_slice
@@ -257,15 +250,8 @@ module Assembler
         bytes = get_bytes value.value
         write get_trimmed_bytes size, bytes
       when FloatLiteral
-        if size == 4
-          num = value.value.to_f32
-          bytes = get_bytes num
-          write get_trimmed_bytes size, bytes
-        else
-          num = value.value.to_f64
-          bytes = get_bytes num
-          write get_trimmed_bytes size, bytes
-        end
+        bytes = get_bytes value.value
+        write get_trimmed_bytes size, bytes
       when StringLiteral
         write get_trimmed_bytes size, value.value.to_slice
       when Label

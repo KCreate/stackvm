@@ -134,12 +134,8 @@ If a register is surrounded with brackets, the value inside the register is mean
 
 ## Floating-point arithmetic instructions
 
-The registers `reg1` and `reg2` need to have the same mode. If they are in
-`qword` mode, their content is treated as `Float64`. If they are in regular `dword`
-mode, their content is treated as `Float32`. Other modes will cause a crash.
-
-If the argument registers have a different mode than the target register, the result
-will be casted to the other type. This might result in a loss of precision.
+All registers of these instructions need to be in `qword` (e.g `r0q`) mode. If a register
+with a smaller mode is specified, this will result in a garbage value.
 
 | Name   | Arguments       | Description                                            |
 |--------|-----------------|--------------------------------------------------------|
