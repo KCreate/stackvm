@@ -847,7 +847,7 @@ module VM
       # Base address of this stack frame
       # Is a pointer to a qword which will later
       # be populated with the old frame pointer
-      stack_frame_baseadr = reg_read UInt32, Register::SP.dword
+      stack_frame_baseadr = (reg_read UInt32, Register::SP.dword) - 8
 
       # Push the new stack frame
       stack_write return_address
@@ -901,7 +901,7 @@ module VM
       frame_pointer = mem_read UInt32, stack_frame_baseadr
       return_address = mem_read UInt32, stack_frame_baseadr + 4
       argument_count = mem_read UInt32, stack_frame_baseadr + 8
-      stack_pointer = stack_frame_baseadr + 8 + argument_count
+      stack_pointer = stack_frame_baseadr + 12 + argument_count
 
       # Restore old state
       reg_write Register::SP.dword, stack_pointer

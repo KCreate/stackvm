@@ -1,14 +1,24 @@
-.def target r0
+; setup
+.def calc1 r0
+.def calc2 r1
+.def exitreg r59
 
-.org 200
+.org 0x200
+.label _add
+  load calc1, 16
+  load calc2, 12
+  add calc1, calc1, calc2
+  store 20, calc1
+  ret
+
+; main entry code
+.org 0x0
 .label entry_addr
-  loadi target, 255
-  push qword, 255
-  push dword, 255
-  push word, 255
-  push byte, 255
+.label main
+  push dword, 0
+  push dword, 25
+  push dword, 25
+  push dword, qword
+  call _add
 
-  rpop r1b
-  rpop r1w
-  rpop r1d
-  rpop r1q
+  rpop exitreg
