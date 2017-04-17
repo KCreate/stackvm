@@ -312,7 +312,7 @@ module VM
         #      |   |   +- Value
         #      |   |   |
         #      v   v   v
-        return 1 + 1 + size
+        return 1 + 1 + reg.bytecount
       when Opcode::PUSH
         address = reg_read UInt32, Register::IP.dword
         size = mem_read UInt32, address + 1
