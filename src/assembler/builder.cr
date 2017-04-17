@@ -118,6 +118,8 @@ module Assembler
       @aliases["interrupt_status"] = IntegerLiteral.new INTERRUPT_STATUS
       @aliases["vram_address"] = IntegerLiteral.new VRAM_ADDRESS
       @aliases["vram_size"] = IntegerLiteral.new VRAM_SIZE
+      @aliases["vram_width"] = IntegerLiteral.new VRAM_WIDTH
+      @aliases["vram_height"] = IntegerLiteral.new VRAM_HEIGHT
     end
 
     def build(filename, source)
@@ -256,13 +258,14 @@ module Assembler
         write get_trimmed_bytes size, bytes
       when FloatLiteral
         if size == 4
-          value = value.value.to_i32
+          num = value.value.to_f32
+          bytes = get_bytes num
+          write get_trimmed_bytes size, bytes
         else
-          value = value.value
+          num = value.value.to_f64
+          bytes = get_bytes num
+          write get_trimmed_bytes size, bytes
         end
-
-        bytes = get_bytes value
-        write get_trimmed_bytes size, bytes
       when StringLiteral
         write get_trimmed_bytes size, value.value.to_slice
       when Label

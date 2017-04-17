@@ -4,6 +4,8 @@ require "option_parser"
 require "./assembler/builder.cr"
 require "./machine/vm.cr"
 require "./machine/debugger.cr"
+require "./monitor.cr"
+require "./constants/constants.cr"
 
 module StackVM
   include Assembler
@@ -19,6 +21,7 @@ module StackVM
       case command = arguments.shift
       when "run" then run arguments
       when "build" then build arguments
+      when "monitor" then monitor arguments
       when "help" then help
       when "version" then version
       else
@@ -210,6 +213,68 @@ module StackVM
       end
     end
 
+    # Start the virtual monitor
+    def monitor(arguments : Array(String))
+      filename = ""
+      scaling = 2
+
+      parser = OptionParser.parse(arguments) do |parser|
+        parser.banner = "Usage: monitor filename [switches]"
+        parser.on("-s FACTOR", "--scale=FACTOR", "set scaling factor") { |factor|
+          scaling = factor.to_i32
+        }
+        parser.unknown_args do |args|
+          arg = args.shift?
+
+          unless arg
+            error "missing filename"
+            puts parser
+            exit 1
+          end
+
+          filename = arg
+        end
+      end
+
+      if filename == ""
+        error "missing filename"
+        puts parser
+        exit 1
+      end
+
+      unless File.exists?(filename) && File.readable?(filename)
+        error "Can't open file #{filename}"
+        puts parser
+        exit 1
+      end
+
+      file = File.open filename, "r"
+
+      unless file.size == Constants::MEMORY_SIZE
+        error "Input file needs to be exactly #{Constants::MEMORY_SIZE} bytes"
+        exit 1
+      end
+
+      ptr = LibC.mmap(nil, Constants::MEMORY_SIZE, LibC::PROT_READ, LibC::MAP_SHARED, file.fd, 0)
+
+      if ptr == Pointer(Void).new -1
+        error "Errno(#{Errno.value}): Could not mmap #{filename} into memory"
+        exit 1
+      end
+
+      size = Constants::VRAM_SIZE
+      address = Constants::VRAM_ADDRESS
+      monitor_input = Bytes.new(ptr.as(UInt8*) + address, size)
+
+      puts "memory monitor at #{address}"
+
+      monitor = VM::Monitor.new "Main Monitor", scaling
+      monitor.memory = monitor_input
+      monitor.start
+
+      LibC.munmap(monitor_input.to_unsafe.as(Void*), size)
+    end
+
     def help
       puts <<-HELP
         Usage: asm [command]
@@ -217,13 +282,14 @@ module StackVM
         Commands:
             run                 run a file
             build               assemble a file
+            monitor             start the virtual monitor
             version             show version
             help                show this help
       HELP
     end
 
     def version
-      puts "StackVM Assembler v0.1.0"
+      puts "Virtual Machine 0.1.0"
     end
 
     # Pretty print a number in hexadecimal
@@ -233,15 +299,15 @@ module StackVM
     end
 
     private def error(message)
-      STDERR.puts "#{"Error:".colorize(:red).bold} #{message}"
+      STDOUT.puts "#{"Error:".colorize(:red).bold} #{message}"
     end
 
     private def warning(message)
-      STDERR.puts "#{"Warning:".colorize(:yellow).bold} #{message}"
+      STDOUT.puts "#{"Warning:".colorize(:yellow).bold} #{message}"
     end
 
     private def success(status, message)
-      STDERR.puts "#{"#{status}:".colorize(:green).bold} #{message}"
+      STDOUT.puts "#{"#{status}:".colorize(:green).bold} #{message}"
     end
   end
 

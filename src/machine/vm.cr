@@ -46,7 +46,15 @@ module VM
     #
     # Tries to create the file
     protected def self.get_shared_memory_region(filename, size)
-      file = File.open filename, "w+" rescue nil
+
+      file : File?
+
+      if File.exists?(filename) && File.readable?(filename)
+        file = File.open filename, "r+" rescue nil
+      else
+        file = File.open filename, "w+" rescue nil
+      end
+
 
       unless file
         raise "could not open file: #{filename}"

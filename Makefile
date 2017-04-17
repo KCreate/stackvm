@@ -1,14 +1,14 @@
-FILE = "examples/interrupts.asm"
+FILE = "examples/debug.asm"
+MONITOR = "machine.memory"
 
 default: stackvm
 
 debug: stackvm
-	bin/stackvm build $(FILE) -o debug.bc
-	bin/stackvm run debug.bc --memory=441 --debugger
+	bin/stackvm build $(FILE) -o debug.bc -s
+	bin/stackvm run debug.bc --debugger
 
-run: stackvm
-	bin/stackvm build $(FILE) -o debug.bc
-	bin/stackvm run debug.bc --memory=441
+monitor: stackvm
+	bin/stackvm monitor $(MONITOR) -s 3
 
 stackvm_release:
 	mkdir -p bin

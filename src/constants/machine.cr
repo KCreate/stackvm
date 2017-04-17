@@ -33,4 +33,8 @@ module Constants
   # Size of video ram (240 * 160 pixels)
   VRAM_SIZE = 38400
 
+  # Dimensions of the monitor
+  VRAM_WIDTH = 240
+  VRAM_HEIGHT = 160
+
 end
