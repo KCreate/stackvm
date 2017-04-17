@@ -137,7 +137,8 @@ module Assembler
   class Label < Atomic
     getter value : String
 
-    def initialize(@value)
+    def initialize(value)
+      @value = value.downcase
     end
 
     def to_s(io)

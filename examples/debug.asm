@@ -10,12 +10,12 @@
   push dword, 25
   push dword, 25
   push dword, qword
-  call _add
+  call @"my nice function"
 
   rpop exitreg
 
 .org 0x200
-.label _add
+.label @"my nice function"
   load calc1, 16
   load calc2, 12
   add calc1, calc1, calc2
