@@ -146,7 +146,14 @@ with a smaller mode is specified, this will result in a garbage value.
 | `frem` | reg, reg1, reg2 | Put the remainder of (`reg1` % `reg2`) into `reg`      |
 | `fexp` | reg, reg1, reg2 | Raise `reg1` to the power of `reg2` and store in `reg` |
 
-## Comparison instructions
+## Floating-point comparison instructions
+
+| Name   | Arguments   | Description                                            |
+|--------|-------------|--------------------------------------------------------|
+| `flt`  | reg1, reg2  | Set `flags` zero bit, if `reg1` is less than `reg2`    |
+| `fgt`  | reg1, reg2  | Set `flags` zero bit, if `reg1` is greater than `reg2` |
+
+## Integer comparison instructions
 
 | Name  | Arguments  | Description                                                       |
 |-------|------------|-------------------------------------------------------------------|
@@ -167,6 +174,13 @@ with a smaller mode is specified, this will result in a garbage value.
 | `nand` | reg, reg1, reg2 | Store bitwise NAND of `reg1` and `reg2` into `reg` |
 | `or`   | reg, reg1, reg2 | Store bitwise OR of `reg1` and `reg2` into `reg`   |
 | `not`  | reg, reg1       | Store bitwise NOT of `reg1` into `reg`             |
+
+## Casting instructions
+
+| Name      | Arguments      | Description                                                                |
+|-----------|----------------|----------------------------------------------------------------------------|
+| `inttofp` | target, source | Reads an int from `source` and stores the float representation in `target` |
+| `fptoint` | target, source | Reads a float from `source` and stores the int representation in `target`  |
 
 ## Stack instructions
 
