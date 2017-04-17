@@ -310,7 +310,7 @@ module Assembler
 
     # Registers a new label in the offset table
     def register_label(label : Label)
-      if @offsets.has_key?(label) || @aliases.has_key?(label)
+      if @offsets.has_key?(label.value) || @aliases.has_key?(label.value)
         label.raise "Can't redefine #{label.value}"
       end
 
@@ -321,7 +321,7 @@ module Assembler
 
     # Register a new alias
     def register_alias(label : Label, node : Atomic)
-      if @offsets.has_key?(label) || @aliases.has_key?(label)
+      if @offsets.has_key?(label.value) || @aliases.has_key?(label.value)
         label.raise "Can't redefine #{label.value}"
       end
 
