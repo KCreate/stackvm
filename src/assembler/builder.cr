@@ -105,6 +105,19 @@ module Assembler
       {% for name, code in Flag.constants %}
         @aliases["f_{{name.downcase}}"] = IntegerLiteral.new {{code}}
       {% end %}
+
+      # Several constants for the machine
+      @aliases["memory_size"] = IntegerLiteral.new MEMORY_SIZE
+      @aliases["stack_base"] = IntegerLiteral.new STACK_BASE
+      @aliases["machine_internals_ptr"] = IntegerLiteral.new MACHINE_INTERNALS_PTR
+      @aliases["machine_internals_size"] = IntegerLiteral.new MACHINE_INTERNALS_SIZE
+      @aliases["interrupt_handler_address"] = IntegerLiteral.new INTERRUPT_HANDLER_ADDRESS
+      @aliases["interrupt_memory"] = IntegerLiteral.new INTERRUPT_MEMORY
+      @aliases["interrupt_memory_size"] = IntegerLiteral.new INTERRUPT_MEMORY_SIZE
+      @aliases["interrupt_code"] = IntegerLiteral.new INTERRUPT_CODE
+      @aliases["interrupt_status"] = IntegerLiteral.new INTERRUPT_STATUS
+      @aliases["vram_address"] = IntegerLiteral.new VRAM_ADDRESS
+      @aliases["vram_size"] = IntegerLiteral.new VRAM_SIZE
     end
 
     def build(filename, source)
