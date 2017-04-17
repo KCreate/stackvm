@@ -3,19 +3,19 @@ require "../constants/constants.cr"
 module VM
   include Constants
 
-  MEMORY_SIZE = 8_000_000
-
   struct Header
     property valid : Bool
     property magic : StaticArray(UInt8, 4)
     property entry_addr : UInt32
     property load_table : Array(LoadTableEntry)
+    property total_size : UInt32
 
     def initialize
       @valid = true
       @magic = StaticArray(UInt8, 4).new 0_u8
       @entry_addr = 0_u32
       @load_table = [] of LoadTableEntry
+      @total_size = 0_u32
     end
   end
 
@@ -102,7 +102,7 @@ module VM
 
       # Read the size of the load table
       load_table_entry_count = (data + 8).to_unsafe.as(UInt32*)[0]
-      load_table_bytesize = load_table_entry_count * 3
+      load_table_bytesize = load_table_entry_count * 3 * 4
 
       # Check that there are enough bytes for all load table entries
       if data.size < 12 + load_table_bytesize
@@ -115,6 +115,8 @@ module VM
       load_table_entry_count.times do |index|
         header.load_table << load_table_bytes[index]
       end
+
+      header.total_size = (12 + load_table_bytesize).to_u32
 
       # Check that all segments point to valid memory segments
       header.load_table.each do |entry|
@@ -157,10 +159,8 @@ module VM
       header.load_table.each do |entry|
         next if entry.size == 0 # skip empty segments
 
-        segment = data[entry.offset, entry.size]
+        segment = data[header.total_size + entry.offset, entry.size]
         mem_write entry.address, segment
-
-        puts "writing #{entry.size} bytes to address #{entry.address}"
       end
 
       self
