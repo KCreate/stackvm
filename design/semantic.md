@@ -42,15 +42,13 @@ Currently, only the lower `byte` of the `flags` register has anything meaningful
 are untouched by the machine.
 
 ```
-     + Reserved / Undefined
-     |
-vvvvvv
+      + Reserved / Undefined
+      |
+vvvvvvv
 00000000
 ^^^^^^^^
-      ||
-      |+-- Zero flag - Set if the last operation resulted in zero (or a comparison resulted in true)
-      |
-      +-- Negative flag - Set if the most significant bit is set
+       |
+       +-- Zero flag - Set if the last operation resulted in zero (or a comparison resulted in true)
 ```
 
 Registers can hold a 64-bit value. The default addressing mode is 32-bit (`dword`). You can target
@@ -96,7 +94,8 @@ A few constants are available for commonly used sizes.
 
 ## Instructions
 
-Instructions are names assigned to a specific opcode. Instruction encoding is described in the [encoding](./encoding.md) doc.
+Instructions are names assigned to a specific opcode.
+Instruction encoding is described in the [encoding](./encoding.md) doc.
 
 ## Instruction descriptions
 

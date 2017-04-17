@@ -2,7 +2,6 @@ module Constants
 
   enum Flag : UInt8
     ZERO     = 0b00000001
-    NEGATIVE = 0b00000010
 
     REGCODE  = 0b00111111
     REGMODE  = 0b11000000

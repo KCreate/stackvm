@@ -451,6 +451,11 @@ module VM
       address >= 0 && address < @memory.size
     end
 
+    # Set or unset the zero bit in the flags register
+    def set_zero_flag(set : Bool)
+      reg_write Register::FLAGS.byte, set ? 1 : 0
+    end
+
     # :nodoc:
     private def illegal_memory_access(address)
       ip = reg_read UInt32, Register::IP.dword
@@ -536,7 +541,9 @@ module VM
         right = Register.new mem_read(UInt8, ip + 3)
         left = reg_read UInt64, left
         right = reg_read UInt64, right
-        reg_write target, left {{operator.id}} right
+        result = left {{operator.id}} right
+        reg_write target, result
+        set_zero_flag result == 0
       end
     end
 
@@ -557,7 +564,9 @@ module VM
       right = Register.new mem_read(UInt8, ip + 3)
       left = reg_read Int64, left
       right = reg_read Int64, right
-      reg_write target, left / right
+      result = left / right
+      reg_write target, result
+      set_zero_flag result == 0
     end
 
     # Executes a irem instruction
@@ -571,7 +580,9 @@ module VM
       right = Register.new mem_read(UInt8, ip + 3)
       left = reg_read Int64, left
       right = reg_read Int64, right
-      reg_write target, left % right
+      result = left % right
+      reg_write target, result
+      set_zero_flag result == 0
     end
 
     # Executes a load instruction
