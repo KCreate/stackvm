@@ -177,10 +177,11 @@ with a smaller mode is specified, this will result in a garbage value.
 
 ## Casting instructions
 
-| Name      | Arguments      | Description                                                                |
-|-----------|----------------|----------------------------------------------------------------------------|
-| `inttofp` | target, source | Reads an int from `source` and stores the float representation in `target` |
-| `fptoint` | target, source | Reads a float from `source` and stores the int representation in `target`  |
+| Name       | Arguments      | Description                                                                |
+|------------|----------------|----------------------------------------------------------------------------|
+| `inttofp`  | target, source | Reads an int from `source` and stores the float representation in `target` |
+| `sinttofp` | target, source | Reads a signed int from `source` and stores the float representation in `target` |
+| `fptoint`  | target, source | Reads a float from `source` and stores the int representation in `target`  |
 
 ## Stack instructions
 

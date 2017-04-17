@@ -253,6 +253,12 @@ module VM
         op_rem ip
       when Opcode::IREM
         op_irem ip
+      when Opcode::INTTOFP
+        op_inttofp ip
+      when Opcode::SINTTOFP
+        op_sinttofp ip
+      when Opcode::FPTOINT
+        op_fptoint ip
       when Opcode::LOAD
         op_load ip
       when Opcode::LOADR
@@ -583,6 +589,42 @@ module VM
       result = left % right
       reg_write target, result
       set_zero_flag result == 0
+    end
+
+    # Executes a inttofp instruction
+    #
+    # ```
+    # inttofp r0, r1
+    # ```
+    private def op_inttofp(ip)
+      target = Register.new mem_read(UInt8, ip + 1)
+      source = Register.new mem_read(UInt8, ip + 2)
+      source = reg_read UInt64, source
+      reg_write target, source.to_f64
+    end
+
+    # Executes a sinttofp instruction
+    #
+    # ```
+    # sinttofp r0, r1
+    # ```
+    private def op_sinttofp(ip)
+      target = Register.new mem_read(UInt8, ip + 1)
+      source = Register.new mem_read(UInt8, ip + 2)
+      source = reg_read Int64, source
+      reg_write target, source.to_f64
+    end
+
+    # Executes a fptoint instruction
+    #
+    # ```
+    # fptoint r0, r1
+    # ```
+    private def op_fptoint(ip)
+      target = Register.new mem_read(UInt8, ip + 1)
+      source = Register.new mem_read(UInt8, ip + 2)
+      source = reg_read Float64, source
+      reg_write target, source.to_i64
     end
 
     # Executes a load instruction

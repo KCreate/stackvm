@@ -317,7 +317,7 @@ module Assembler
       when CMP, LT, GT, ULT, UGT                then check_args [1, 1]
       when SHR, SHL, AND, XOR, NAND, OR         then check_args [1, 1, 1]
       when NOT                                  then check_args [1, 1]
-      when INTTOFP, FPTOINT                     then check_args [1, 1]
+      when INTTOFP, SINTTOFP, FPTOINT           then check_args [1, 1]
       when LOAD                                 then check_args [1, 4]
       when LOADR                                then check_args [1, 1]
       when LOADS                                then check_args [4, 4]

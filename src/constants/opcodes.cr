@@ -40,6 +40,7 @@ module Constants
     NOT
 
     INTTOFP
+    SINTTOFP
     FPTOINT
 
     LOAD
@@ -113,6 +114,7 @@ module Constants
     3, # not
 
     3, # inttofp
+    3, # sinttofp
     3, # fptoint
 
     6, # load

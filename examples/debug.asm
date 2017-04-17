@@ -1,13 +1,29 @@
-loadi r0, 25
-loadi r1, 25
-cmp r0, r1
+.def calc r4q
+.def s1 r0q
+.def s2 r1q
+.def s3 r2q
+.def s4 r3q
 
-loadi r0, 25
-loadi r1, 30
-cmp r0, r1
+loadi s1, 5
+loadi s2, -5
+loadi s3, 5.5
+loadi s4, -5.5
 
-inttofp r0, r1
-fptoint r0, r1
 
-flt r0, r1
-fgt r0, r1
+mov calc, s1
+inttofp calc, calc
+
+mov calc, s2
+inttofp calc, calc
+
+mov calc, s1
+sinttofp calc, calc
+
+mov calc, s2
+sinttofp calc, calc
+
+mov calc, s3
+fptoint calc, calc
+
+mov calc, s4
+fptoint calc, calc
