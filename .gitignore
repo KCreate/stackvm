@@ -1,6 +1,8 @@
 /doc/
 /lib/
 /bin/
+/.crystal/
 /.shards/
 *.swp
 .DS_Store
+.git
