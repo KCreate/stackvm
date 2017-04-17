@@ -25,15 +25,18 @@ module Assembler
     # generated executable
     property offsets : Hash(String, Int32)
 
+    # Maintains a mapping from offsets in the offset table
+    # to unresolved labels
+    # This allows you to use labels which are defined later on in
+    # the file
+    property unresolved_labels : Hash(Int32, {Int32, Label})
+
     # Maintains a mapping from labels to atomic values
     property aliases : Hash(String, Atomic)
 
     # The load table which gets embedded into the final executable
     #
     # Each table entry contains three 32-bit unsigned integers.
-    # 0 - Offset in the executable
-    # 1 - Length of the segment
-    # 2 - Address to which it should be loaded in memory
     property load_table : Array(LoadTableEntry)
 
     # Builds *source*
@@ -42,6 +45,7 @@ module Assembler
 
       begin
         builder.build filename, source
+        builder.resolve_unresolved_labels
       rescue e : Exception
         yield e, Bytes.new(0), builder
       end
@@ -54,6 +58,7 @@ module Assembler
       @offsets = {} of String => Int32
       @aliases = {} of String => Atomic
       @load_table = [] of LoadTableEntry
+      @unresolved_labels = {} of Int32 => {Int32, Label}
 
       # Default load entry
       add_load_entry 0x00
@@ -131,11 +136,38 @@ module Assembler
         when Constant
           register_label stat.name
           size = encode_size stat.size
-          value = encode_value size, stat.value
-          write value
+          write_value size, stat.value
         when Instruction
           write_instruction stat
         end
+      end
+    end
+
+    # Try to resolve all unresolved labels
+    def resolve_unresolved_labels
+      @unresolved_labels.each do |address, (size, label)|
+
+        # Target area in which the value has to be filled in
+        target = @output.to_slice[address, size]
+
+        # Check offset table
+        if @offsets.has_key? label.value
+          offset = @offsets[label.value]
+          bytes = get_bytes offset
+          target.copy_from get_trimmed_bytes size, bytes
+          next
+        end
+
+        # Check alias table
+        if @aliases.has_key? label.value
+          node = @aliases[label.value]
+          bytes = encode_value size, node
+          target.copy_from get_trimmed_bytes size, bytes
+          next
+        end
+
+        # The label could not be resolved
+        label.raise "Unknown label #{label.value}"
       end
     end
 
@@ -193,7 +225,51 @@ module Assembler
           return encode_value size, node
         end
 
-        value.raise "Bug: Unknown label #{value.value}"
+        value.raise "Unknown label #{value.value}"
+      else
+        value.raise "Bug: Unknown node type #{value.class}"
+      end
+    end
+
+    # Write *value* into the output stream, with a max size to *size*
+    def write_value(size, value : Atomic)
+      case value
+      when IntegerLiteral
+        bytes = get_bytes value.value
+        write get_trimmed_bytes size, bytes
+      when FloatLiteral
+        if size == 4
+          value = value.value.to_i32
+        else
+          value = value.value
+        end
+
+        bytes = get_bytes value
+        write get_trimmed_bytes size, bytes
+      when StringLiteral
+        write get_trimmed_bytes size, value.value.to_slice
+      when Label
+
+        # Check both the offset table and the alias table
+        if @offsets.has_key? value.value
+          offset = @offsets[value.value]
+          bytes = get_bytes offset
+          write get_trimmed_bytes size, bytes
+          return
+        end
+
+        if @aliases.has_key? value.value
+          node = @aliases[value.value]
+          return write_value size, node
+        end
+
+        # The label wasn't encountered before, so we add it to the
+        # unresolved labels table.
+        #
+        # We also reserve enough bytes for the value
+        # so another subroutine can later fill in the correct value
+        @unresolved_labels[@output.pos] = {size, value}
+        write Bytes.new(size)
       else
         value.raise "Bug: Unknown node type #{value.class}"
       end
@@ -204,7 +280,7 @@ module Assembler
       assert_count instruction, {{bytecounts.size}}
 
       {% for size, index in bytecounts %}
-        write encode_value {{size}}, instruction.arguments[{{index}}]
+        write_value {{size}}, instruction.arguments[{{index}}]
       {% end %}
     end
 
@@ -265,19 +341,18 @@ module Assembler
         value = instruction.arguments[1]
 
         size_bytes = encode_size size
-        value_bytes = encode_value size_bytes, value
-
-        write encode_value 4, size
-        write value_bytes
+        write_value 4, size
+        write_value size_bytes, value
       when LOADI
         assert_count instruction, 2
 
-        reg_bytes = encode_value 1, instruction.arguments[0]
-        reg = Register.new get_casted_bytes UInt8, reg_bytes
-        value = encode_value reg.bytecount, instruction.arguments[1]
+        reg_arg = instruction.arguments[0]
 
-        write reg_bytes
-        write value
+        reg_bytes = encode_value 1, reg_arg
+        reg = Register.new get_casted_bytes UInt8, reg_bytes
+
+        write_value 1, reg_arg
+        write_value reg.bytecount, instruction.arguments[1]
       end
     end
 

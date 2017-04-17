@@ -3,16 +3,7 @@
 .def calc2 r1
 .def exitreg r59
 
-.org 0x200
-.label _add
-  load calc1, 16
-  load calc2, 12
-  add calc1, calc1, calc2
-  store 20, calc1
-  ret
-
 ; main entry code
-.org 0x0
 .label entry_addr
 .label main
   push dword, 0
@@ -22,3 +13,11 @@
   call _add
 
   rpop exitreg
+
+.org 0x200
+.label _add
+  load calc1, 16
+  load calc2, 12
+  add calc1, calc1, calc2
+  store 20, calc1
+  ret
