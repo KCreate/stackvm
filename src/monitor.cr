@@ -37,7 +37,11 @@ module VM
           address = offset + x
           byte = memory[address]
 
-          renderer.draw_color = {byte, byte, byte, 255}
+          r = ((byte & 0b11100000) >> 5) * 32
+          g = ((byte & 0b00011100) >> 2) * 32
+          b = ((byte & 0b00000011)) * 64
+
+          renderer.draw_color = {r, g, b, 255}
           renderer.draw_point x, y
         end
       end
