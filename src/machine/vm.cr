@@ -253,6 +253,8 @@ module VM
         op_rem ip
       when Opcode::IREM
         op_irem ip
+      when Opcode::CMP
+        op_cmp ip
       when Opcode::INTTOFP
         op_inttofp ip
       when Opcode::SINTTOFP
@@ -589,6 +591,21 @@ module VM
       result = left % right
       reg_write target, result
       set_zero_flag result == 0
+    end
+
+    # Executes a cmp instruction
+    #
+    # ```
+    # cmp r0, r1
+    # ```
+    private def op_cmp(ip)
+      left = Register.new mem_read(UInt8, ip + 1)
+      right = Register.new mem_read(UInt8, ip + 2)
+
+      left = reg_read UInt64, left
+      right = reg_read UInt64, right
+
+      set_zero_flag left == right
     end
 
     # Executes a inttofp instruction
