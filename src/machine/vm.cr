@@ -392,7 +392,7 @@ module VM
 
     # :ditto:
     def mem_write(address, data : Bytes)
-      illegal_memory_access address unless legal_address address + data.size
+      illegal_memory_access address unless legal_address address + data.size - 1
       target = @memory + address
       target.copy_from data
       self
@@ -400,7 +400,7 @@ module VM
 
     # Reads a *type* value from *address*
     def mem_read(x : T.class, address) forall T
-      illegal_memory_access address unless legal_address address + sizeof(T)
+      illegal_memory_access address unless legal_address address + sizeof(T) - 1
       source = @memory + address
       ptr = Pointer(T).new source.to_unsafe.address
       ptr[0]
@@ -408,7 +408,7 @@ module VM
 
     # Reads *count* bytes from *address*
     def mem_read(count, address)
-      illegal_memory_access address unless legal_address address + count
+      illegal_memory_access address unless legal_address address + count - 1
       @memory[address, count]
     end
 
