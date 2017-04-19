@@ -92,12 +92,12 @@ module Assembler
 
       # Error codes
       {% for name, code in ErrorCode.constants %}
-        @aliases["{{name.downcase}}"] = IntegerLiteral.new {{code}}
+        @aliases["e_{{name.downcase}}"] = IntegerLiteral.new {{code}}
       {% end %}
 
       # Syscalls
       {% for name, code in Syscall.constants %}
-        @aliases["{{name.downcase}}"] = IntegerLiteral.new {{code}}
+        @aliases["sys_{{name.downcase}}"] = IntegerLiteral.new {{code}}
       {% end %}
 
       # Different flags for some values
