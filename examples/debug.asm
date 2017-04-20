@@ -1,29 +1,9 @@
-.def calc r4q
-.def s1 r0q
-.def s2 r1q
-.def s3 r2q
-.def s4 r3q
+loadi r0q, 2.0
+loadi r1q, 3.0
 
-loadi s1, 5
-loadi s2, -5
-loadi s3, 5.5
-loadi s4, -5.5
-
-
-mov calc, s1
-inttofp calc, calc
-
-mov calc, s2
-inttofp calc, calc
-
-mov calc, s1
-sinttofp calc, calc
-
-mov calc, s2
-sinttofp calc, calc
-
-mov calc, s3
-fptoint calc, calc
-
-mov calc, s4
-fptoint calc, calc
+fadd r2q, r0q, r1q
+fsub r3q, r0q, r1q
+fmul r4q, r0q, r1q
+fdiv r5q, r0q, r1q
+frem r6q, r0q, r1q
+fexp r7q, r0q, r1q

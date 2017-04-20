@@ -253,6 +253,18 @@ module VM
         op_rem ip
       when Opcode::IREM
         op_irem ip
+      when Opcode::FADD
+        op_fadd ip
+      when Opcode::FSUB
+        op_fsub ip
+      when Opcode::FMUL
+        op_fmul ip
+      when Opcode::FDIV
+        op_fdiv ip
+      when Opcode::FREM
+        op_frem ip
+      when Opcode::FEXP
+        op_fexp ip
       when Opcode::CMP
         op_cmp ip
       when Opcode::INTTOFP
@@ -542,56 +554,35 @@ module VM
     end
 
     # Macro to reduce duplicate code for some operators
-    private macro impl_operator(name, operator)
+    private macro impl_operator(name, type, operator)
       private def op_{{name}}(ip)
         target = Register.new mem_read(UInt8, ip + 1)
         left = Register.new mem_read(UInt8, ip + 2)
         right = Register.new mem_read(UInt8, ip + 3)
-        left = reg_read UInt64, left
-        right = reg_read UInt64, right
+        left = reg_read {{type}}, left
+        right = reg_read {{type}}, right
         result = left {{operator.id}} right
         reg_write target, result
         set_zero_flag result == 0
       end
     end
 
-    impl_operator add, :+
-    impl_operator sub, :-
-    impl_operator mul, :*
-    impl_operator div, :/
-    impl_operator rem, :%
+    # Integer arithmetic operations
+    impl_operator add, UInt64, :+
+    impl_operator sub, UInt64, :-
+    impl_operator mul, UInt64, :*
+    impl_operator div, UInt64, :/
+    impl_operator idiv, Int64, :/
+    impl_operator rem, UInt64, :%
+    impl_operator irem, Int64, :%
 
-    # Executes a idiv instruction
-    #
-    # ```
-    # idiv r0, r0, r1
-    # ```
-    private def op_idiv(ip)
-      target = Register.new mem_read(UInt8, ip + 1)
-      left = Register.new mem_read(UInt8, ip + 2)
-      right = Register.new mem_read(UInt8, ip + 3)
-      left = reg_read Int64, left
-      right = reg_read Int64, right
-      result = left / right
-      reg_write target, result
-      set_zero_flag result == 0
-    end
-
-    # Executes a irem instruction
-    #
-    # ```
-    # irem r0, r0, r1
-    # ```
-    private def op_irem(ip)
-      target = Register.new mem_read(UInt8, ip + 1)
-      left = Register.new mem_read(UInt8, ip + 2)
-      right = Register.new mem_read(UInt8, ip + 3)
-      left = reg_read Int64, left
-      right = reg_read Int64, right
-      result = left % right
-      reg_write target, result
-      set_zero_flag result == 0
-    end
+    # Floating-point arithmetic operations
+    impl_operator fadd, Float64, :+
+    impl_operator fsub, Float64, :-
+    impl_operator fmul, Float64, :*
+    impl_operator fdiv, Float64, :/
+    impl_operator frem, Float64, :%
+    impl_operator fexp, Float64, :**
 
     # Executes a cmp instruction
     #
