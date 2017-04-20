@@ -74,6 +74,7 @@ module Assembler
       @aliases["regcode"] = IntegerLiteral.new 1
       @aliases["address"] = IntegerLiteral.new 4
       @aliases["offset"] = IntegerLiteral.new 4
+      @aliases["size"] = IntegerLiteral.new 4
 
       # Default register names
       {% for name, code in Register.constants %}
