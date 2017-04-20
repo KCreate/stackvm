@@ -35,7 +35,6 @@ module Constants
     SHL
     AND
     XOR
-    NAND
     OR
     NOT
 
@@ -109,7 +108,6 @@ module Constants
     4, # shl
     4, # and
     4, # xor
-    4, # nand
     4, # or
     3, # not
 

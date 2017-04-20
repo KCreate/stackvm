@@ -171,7 +171,6 @@ with a smaller mode is specified, this will result in a garbage value.
 | `shl`  | reg, reg1, reg2 | Left-shift `reg1` `reg2` times and store in `reg`  |
 | `and`  | reg, reg1, reg2 | Store bitwise AND of `reg1` and `reg2` into `reg`  |
 | `xor`  | reg, reg1, reg2 | Store bitwise XOR of `reg1` and `reg2` into `reg`  |
-| `nand` | reg, reg1, reg2 | Store bitwise NAND of `reg1` and `reg2` into `reg` |
 | `or`   | reg, reg1, reg2 | Store bitwise OR of `reg1` and `reg2` into `reg`   |
 | `not`  | reg, reg1       | Store bitwise NOT of `reg1` into `reg`             |
 

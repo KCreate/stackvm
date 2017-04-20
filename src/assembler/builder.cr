@@ -315,7 +315,7 @@ module Assembler
       when FADD, FSUB, FMUL, FDIV, FREM, FEXP   then check_args [1, 1, 1]
       when FLT, FGT                             then check_args [1, 1]
       when CMP, LT, GT, ULT, UGT                then check_args [1, 1]
-      when SHR, SHL, AND, XOR, NAND, OR         then check_args [1, 1, 1]
+      when SHR, SHL, AND, XOR, OR               then check_args [1, 1, 1]
       when NOT                                  then check_args [1, 1]
       when INTTOFP, SINTTOFP, FPTOINT           then check_args [1, 1]
       when LOAD                                 then check_args [1, 4]
