@@ -268,8 +268,7 @@ module StackVM
 
       puts "memory monitor at #{address}"
 
-      monitor = VM::Monitor.new "Main Monitor", scaling
-      monitor.memory = monitor_input
+      monitor = VM::Monitor.new "Main Monitor", monitor_input
       monitor.start
 
       LibC.munmap(monitor_input.to_unsafe.as(Void*), size)
