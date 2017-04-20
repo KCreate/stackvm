@@ -966,7 +966,7 @@ module VM
     # push dword, 16    ; argument bytecount
     #
     # loadi r0, qword, myfunction
-    # call r0
+    # callr r0
     # ```
     private def op_callr(ip)
       target = Register.new mem_read(UInt8, ip + 1)
