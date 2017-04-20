@@ -553,8 +553,8 @@ module VM
       reg_write reg, 0
     end
 
-    # Macro to reduce duplicate code for some operators
-    private macro impl_operator(name, type, operator)
+    # Macro to reduce duplicate code for arithmetic instructions
+    private macro impl_arithmetic_instruction(name, type, operator)
       private def op_{{name}}(ip)
         target = Register.new mem_read(UInt8, ip + 1)
         left = Register.new mem_read(UInt8, ip + 2)
@@ -567,36 +567,66 @@ module VM
       end
     end
 
-    # Integer arithmetic operations
-    impl_operator add, UInt64, :+
-    impl_operator sub, UInt64, :-
-    impl_operator mul, UInt64, :*
-    impl_operator div, UInt64, :/
-    impl_operator idiv, Int64, :/
-    impl_operator rem, UInt64, :%
-    impl_operator irem, Int64, :%
+    # Macro to reduce duplicate code for comparison instructions
+    private macro impl_comparison_instruction(name, type, operator)
+      private def op_{{name}}(ip)
+        left = Register.new mem_read(UInt8, ip + 1)
+        right = Register.new mem_read(UInt8, ip + 2)
 
-    # Floating-point arithmetic operations
-    impl_operator fadd, Float64, :+
-    impl_operator fsub, Float64, :-
-    impl_operator fmul, Float64, :*
-    impl_operator fdiv, Float64, :/
-    impl_operator frem, Float64, :%
-    impl_operator fexp, Float64, :**
+        left = reg_read {{type}}, left
+        right = reg_read {{type}}, right
 
-    # Executes a cmp instruction
+        set_zero_flag left {{operator.id}} right
+      end
+    end
+
+    # Integer arithmetic instructions
+    impl_arithmetic_instruction add, UInt64, :+
+    impl_arithmetic_instruction sub, UInt64, :-
+    impl_arithmetic_instruction mul, UInt64, :*
+    impl_arithmetic_instruction div, UInt64, :/
+    impl_arithmetic_instruction idiv, Int64, :/
+    impl_arithmetic_instruction rem, UInt64, :%
+    impl_arithmetic_instruction irem, Int64, :%
+
+    # Integer comparison instructions
+    impl_comparison_instruction cmp, Int64, :==
+    impl_comparison_instruction lt, Int64, :<
+    impl_comparison_instruction gt, Int64, :>
+    impl_comparison_instruction ult, UInt64, :<
+    impl_comparison_instruction ugt, UInt64, :>
+
+    # Floating-point arithmetic instructions
+    impl_arithmetic_instruction fadd, Float64, :+
+    impl_arithmetic_instruction fsub, Float64, :-
+    impl_arithmetic_instruction fmul, Float64, :*
+    impl_arithmetic_instruction fdiv, Float64, :/
+    impl_arithmetic_instruction frem, Float64, :%
+    impl_arithmetic_instruction fexp, Float64, :**
+
+    # Floating-point comparison instructions
+    impl_comparison_instruction flt, Float64, :<
+    impl_comparison_instruction fgt, Float64, :>
+
+    # Bitwise instructions
+    impl_arithmetic_instruction shr, Int64, :<<
+    impl_arithmetic_instruction shl, Int64, :>>
+    impl_arithmetic_instruction and, Int64, :&
+    impl_arithmetic_instruction xor, Int64, :^
+    impl_arithmetic_instruction or, Int64, :|
+
+    # Executes a not instruction
     #
-    # ```
-    # cmp r0, r1
-    # ```
-    private def op_cmp(ip)
-      left = Register.new mem_read(UInt8, ip + 1)
-      right = Register.new mem_read(UInt8, ip + 2)
-
-      left = reg_read UInt64, left
-      right = reg_read UInt64, right
-
-      set_zero_flag left == right
+    # ```
+    # not r0, r1
+    # ```
+    private def op_not(ip)
+      target = Register.new mem_read(UInt8, ip + 1)
+      num = Register.new mem_read(UInt8, ip + 2)
+      num = reg_read Int64, num
+      result = ~num
+      reg_write target, result
+      set_zero_flag result == 0
     end
 
     # Executes a inttofp instruction
