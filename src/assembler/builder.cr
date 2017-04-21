@@ -208,8 +208,34 @@ module Assembler
         else
           size.raise "Unknown label #{size.value}"
         end
+      when UnaryExpression
+        expression = encode_size size.expression
+        case size.operator
+        when :plus
+          return (+ expression)
+        when :minus
+          return (- expression)
+        else
+          size.raise "Bug: Unknown operator #{size.operator}"
+        end
+      when BinaryExpression
+        left = encode_size size.left
+        right = encode_size size.right
+
+        case size.operator
+        when :plus
+          return left + right
+        when :minus
+          return left - right
+        when :mul
+          return left * right
+        when :div
+          return left / right
+        else
+          size.raise "Bug: Unknown operator #{size.operator}"
+        end
       else
-        size.raise "Bug: Unknwon node type #{size.class}"
+        size.raise "Bug: Unknown node type #{size.class}"
       end
     end
 

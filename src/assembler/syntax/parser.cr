@@ -213,7 +213,6 @@ module Assembler
         advance
         node = parse_atomic
         skip :rightparen
-        advance
         return node
       else
         unexpected_token @current, "Expected an atomic value"
