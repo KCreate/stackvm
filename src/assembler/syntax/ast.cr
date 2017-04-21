@@ -25,6 +25,12 @@ module Assembler
       self
     end
 
+    def at(left : ASTNode, right : ASTNode)
+      @location_start = left.location_start
+      @location_end = right.location_end
+      self
+    end
+
     def raise(message)
       ::raise "#{message} at #{@location_start || "??"}"
     end
@@ -132,6 +138,31 @@ module Assembler
 
   # Base class for all atomic values
   abstract class Atomic < ASTNode
+  end
+
+  class BinaryExpression < Atomic
+    property operator : Symbol
+    property left : Atomic
+    property right : Atomic
+
+    def initialize(@operator, @left, @right)
+    end
+
+    def to_s(io)
+      io << @left << " " << @operator << " " << @right
+    end
+  end
+
+  class UnaryExpression < Atomic
+    property operator : Symbol
+    property expression : Atomic
+
+    def initialize(@operator, @expression)
+    end
+
+    def to_s(io)
+      io << @operator << @expression
+    end
   end
 
   class Label < Atomic

@@ -45,9 +45,18 @@ module Assembler
         read :comma
       when ';'
         consume_comment
+      when '+'
+        read :plus
       when '-'
-        read
-        consume_numeric
+        read :minus
+      when '*'
+        read :mul
+      when '/'
+        read :div
+      when '('
+        read :leftparen
+      when ')'
+        read :rightparen
       when '0'..'9'
         consume_numeric
       when '"'

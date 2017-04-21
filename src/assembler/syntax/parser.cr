@@ -139,6 +139,52 @@ module Assembler
     end
 
     private def parse_atomic
+      return parse_mul_div
+    end
+
+    private def parse_mul_div
+      left = parse_plus_minus
+      loop do
+        case @current.type
+        when :mul, :div
+          operator = @current.type
+          advance
+          right = parse_plus_minus
+          left = BinaryExpression.new(operator, left, right).at(left, right)
+        else
+          return left
+        end
+      end
+    end
+
+    private def parse_plus_minus
+      left = parse_unary
+      loop do
+        case @current.type
+        when :plus, :minus
+          operator = @current.type
+          advance
+          right = parse_unary
+          left = BinaryExpression.new(operator, left, right).at(left, right)
+        else
+          return left
+        end
+      end
+    end
+
+    private def parse_unary
+      case @current.type
+      when :minus, :plus
+        operator = @current.type
+        advance
+        node = parse_literal
+        return UnaryExpression.new(operator, node).at(node)
+      else
+        parse_literal
+      end
+    end
+
+    private def parse_literal
       location_start = @current.location
 
       case @current.type
@@ -163,6 +209,12 @@ module Assembler
         label = Label.new(token.value).at(location_start, @current.location)
         advance
         return label
+      when :leftparen
+        advance
+        node = parse_atomic
+        skip :rightparen
+        advance
+        return node
       else
         unexpected_token @current, "Expected an atomic value"
       end
