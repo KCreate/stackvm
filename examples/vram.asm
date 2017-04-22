@@ -44,9 +44,4 @@
   add r_calc, r_calc, r_increment                 ; increment the current pixel
   write r_vram_offset, r_calc                     ; update the pixel
 
-  ; small delay
-  push float, 0.00001
-  push word, 1
-  syscall
-
   jmp loop
