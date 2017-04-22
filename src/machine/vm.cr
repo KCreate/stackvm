@@ -1041,7 +1041,7 @@ module VM
         STDOUT.flush
       when Syscall::PUTS
         reg = Register.new stack_pop UInt8
-        value = reg_read 8, reg
+        value = reg_read Int32, reg
         STDOUT.puts "#{value}"
       else
         invalid_syscall id
