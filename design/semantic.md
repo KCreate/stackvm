@@ -235,10 +235,12 @@ syscall id onto the stack. The syscall id is a `word`.
 
 ### Available syscalls
 
-| Name       | Opcode | Arguments | Description                                                 |
-|------------|--------|-----------|-------------------------------------------------------------|
-| `exit`     | `0x00` | code      | Halt the machine with `code` as the exit code (single byte) |
-| `sleep`    | `0x02` | seconds   | Sleeps for `seconds`. `seconds` is a `float64`              |
+| Name    | Opcode | Arguments      | Description                                                 |
+|---------|--------|----------------|-------------------------------------------------------------|
+| `exit`  | `0x00` | code           | Halt the machine with `code` as the exit code (single byte) |
+| `sleep` | `0x01` | seconds        | Sleeps for `seconds`. `seconds` is a `float64`              |
+| `write` | `0x02` | address, count | Writes `count` bytes from `address` into stdout             |
+| `puts`  | `0x03` | reg            | Prints the contents of `reg`                                |
 
 Return values of syscalls are pushed onto the stack. Different syscalls may produce different return values.
 

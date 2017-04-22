@@ -70,11 +70,12 @@ module Assembler
       @aliases["qword"] = IntegerLiteral.new 8
       @aliases["float"] = IntegerLiteral.new 8
       @aliases["bool"] = IntegerLiteral.new 1
-      @aliases["opcode"] = IntegerLiteral.new 1
-      @aliases["regcode"] = IntegerLiteral.new 1
-      @aliases["address"] = IntegerLiteral.new 4
-      @aliases["offset"] = IntegerLiteral.new 4
-      @aliases["size"] = IntegerLiteral.new 4
+      @aliases["t_opcode"] = IntegerLiteral.new 1
+      @aliases["t_register"] = IntegerLiteral.new 1
+      @aliases["t_address"] = IntegerLiteral.new 4
+      @aliases["t_offset"] = IntegerLiteral.new 4
+      @aliases["t_size"] = IntegerLiteral.new 4
+      @aliases["t_syscall"] = IntegerLiteral.new 2
 
       # Default register names
       {% for name, code in Register.constants %}

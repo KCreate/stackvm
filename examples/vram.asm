@@ -16,12 +16,12 @@
 ; machine startup and register initialisation
 .label entry_addr
 .label init
-  loadi r_vram_ptr,                       VRAM_ADDRESS
-  loadi r_vram_offset,                    VRAM_ADDRESS
-  loadi r_one,                            1
-  loadi r_increment,                      increment_amount
-  loadi r_calc,                           0
-  loadi r_memsize,                        memory_size
+  loadi r_vram_ptr,      VRAM_ADDRESS
+  loadi r_vram_offset,   VRAM_ADDRESS
+  loadi r_one,           1
+  loadi r_increment,     increment_amount
+  loadi r_calc,          0
+  loadi r_memsize,       memory_size
 
   sub r_vram_offset, r_vram_offset, r_one ; correct offset pointer
 

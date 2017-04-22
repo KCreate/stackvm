@@ -1030,6 +1030,19 @@ module VM
       when Syscall::SLEEP
         seconds = stack_pop Float64
         sleep seconds
+      when Syscall::WRITE
+        address = stack_pop UInt32
+        count = stack_pop UInt32
+
+        illegal_memory_access address + count unless legal_address address + count - 1
+        bytes = @memory[address, count]
+
+        STDOUT.write bytes
+        STDOUT.flush
+      when Syscall::PUTS
+        reg = Register.new stack_pop UInt8
+        value = reg_read 8, reg
+        STDOUT.puts "#{value}"
       else
         invalid_syscall id
       end
