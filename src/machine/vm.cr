@@ -609,11 +609,11 @@ module VM
     impl_comparison_instruction fgt, Float64, :>
 
     # Bitwise instructions
-    impl_arithmetic_instruction shr, Int64, :<<
-    impl_arithmetic_instruction shl, Int64, :>>
-    impl_arithmetic_instruction and, Int64, :&
-    impl_arithmetic_instruction xor, Int64, :^
-    impl_arithmetic_instruction or, Int64, :|
+    impl_arithmetic_instruction shr, UInt64, :<<
+    impl_arithmetic_instruction shl, UInt64, :>>
+    impl_arithmetic_instruction and, UInt64, :&
+    impl_arithmetic_instruction xor, UInt64, :^
+    impl_arithmetic_instruction or, UInt64, :|
 
     # Executes a not instruction
     #
@@ -623,7 +623,7 @@ module VM
     private def op_not(ip)
       target = Register.new mem_read(UInt8, ip + 1)
       num = Register.new mem_read(UInt8, ip + 2)
-      num = reg_read Int64, num
+      num = reg_read UInt64, num
       result = ~num
       reg_write target, result
       set_zero_flag result == 0
@@ -672,7 +672,7 @@ module VM
     # ```
     private def op_load(ip)
       reg = Register.new mem_read(UInt8, ip + 1)
-      offset = mem_read(Int64, ip + 2)
+      offset = mem_read(UInt32, ip + 2)
       frameptr = reg_read UInt32, Register::FP.dword
       address = frameptr + offset
       value = mem_read reg.bytecount, address
@@ -885,7 +885,7 @@ module VM
     # jz myfunction
     # ```
     private def op_jz(ip)
-      address = mem_read UInt64, ip + 1
+      address = mem_read UInt32, ip + 1
       flags = reg_read UInt8, Register::FLAGS.byte
       zero = flags & Flag::ZERO.value
       reg_write Register::IP.dword, address if zero != 0
@@ -939,7 +939,7 @@ module VM
     # call myfunction
     # ```
     private def op_call(ip)
-      address = mem_read UInt64, ip + 1
+      address = mem_read UInt32, ip + 1
       frameptr = reg_read UInt32, Register::FP.dword
       return_address = ip + decode_instruction_length(fetch)
 
@@ -1031,8 +1031,8 @@ module VM
         seconds = stack_pop Float64
         sleep seconds
       when Syscall::WRITE
-        address = stack_pop UInt32
         count = stack_pop UInt32
+        address = stack_pop UInt32
 
         illegal_memory_access address + count unless legal_address address + count - 1
         bytes = @memory[address, count]
