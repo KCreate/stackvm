@@ -186,11 +186,11 @@ with a smaller mode is specified, this will result in a garbage value.
 
 | Name     | Arguments         | Description                                                        |
 |----------|-------------------|--------------------------------------------------------------------|
-| `load`   | reg, offset       | Read a `reg.size` value from `fp - offset` and store it in `reg`   |
-| `loadr`  | reg, offset       | Read a `reg.size` value from `fp - [offset]` and store it in `reg` |
-| `loads`  | type, offset      | Read a `type` value from `fp - offset` and push it onto the stack  |
-| `loadsr` | type, reg         | Read a `type` value from `fp - [reg]` and push it onto the stack   |
-| `store`  | offset, reg       | Store the contents of `reg` at `fp - offset`                       |
+| `load`   | reg, offset       | Read a `reg.size` value from `fp + offset` and store it in `reg`   |
+| `loadr`  | reg, offset       | Read a `reg.size` value from `fp + [offset]` and store it in `reg` |
+| `loads`  | type, offset      | Read a `type` value from `fp + offset` and push it onto the stack  |
+| `loadsr` | type, reg         | Read a `type` value from `fp + [reg]` and push it onto the stack   |
+| `store`  | offset, reg       | Store the contents of `reg` at `fp + offset`                       |
 | `push`   | type, value       | Push `value` onto the stack                                        |
 
 ## Memory read / write
