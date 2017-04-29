@@ -163,6 +163,11 @@ module VM
       # Clear out memory
       @memory.to_unsafe.clear MEMORY_SIZE
 
+      if header.load_table.size == 0
+        segment = data[header.total_size + 0, data.size]
+        mem_write 0, segment
+      end
+
       # Copy all segments to their addresses in machine memory
       header.load_table.each do |entry|
         next if entry.size == 0 # skip empty segments
