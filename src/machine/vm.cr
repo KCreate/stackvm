@@ -556,12 +556,12 @@ module VM
     # Macro to reduce duplicate code for arithmetic instructions
     private macro impl_arithmetic_instruction(name, type, operator)
       private def op_{{name}}(ip)
-        left = Register.new mem_read(UInt8, ip + 1)
-        right = Register.new mem_read(UInt8, ip + 2)
-        left = reg_read {{type}}, left
-        right = reg_read {{type}}, right
+        left_reg = Register.new mem_read(UInt8, ip + 1)
+        right_reg = Register.new mem_read(UInt8, ip + 2)
+        left = reg_read {{type}}, left_reg
+        right = reg_read {{type}}, right_reg
         result = left {{operator.id}} right
-        reg_write left, result
+        reg_write left_reg, result
         set_zero_flag result == 0
       end
     end
@@ -633,9 +633,9 @@ module VM
     # inttofp r0, r1
     # ```
     private def op_inttofp(ip)
-      source = Register.new mem_read(UInt8, ip + 1)
-      source = reg_read UInt64, source
-      reg_write source, source.to_f64
+      source_reg = Register.new mem_read(UInt8, ip + 1)
+      source = reg_read UInt64, source_reg
+      reg_write source_reg, source.to_f64
     end
 
     # Executes a sinttofp instruction
@@ -644,9 +644,9 @@ module VM
     # sinttofp r0, r1
     # ```
     private def op_sinttofp(ip)
-      source = Register.new mem_read(UInt8, ip + 1)
-      source = reg_read Int64, source
-      reg_write source, source.to_f64
+      source_reg = Register.new mem_read(UInt8, ip + 1)
+      source = reg_read Int64, source_reg
+      reg_write source_reg, source.to_f64
     end
 
     # Executes a fptoint instruction
@@ -655,9 +655,9 @@ module VM
     # fptoint r0, r1
     # ```
     private def op_fptoint(ip)
-      source = Register.new mem_read(UInt8, ip + 1)
-      source = reg_read Float64, source
-      reg_write source, source.to_i64
+      source_reg = Register.new mem_read(UInt8, ip + 1)
+      source = reg_read Float64, source_reg
+      reg_write source_reg, source.to_i64
     end
 
     # Executes a load instruction
