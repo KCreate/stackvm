@@ -26,10 +26,10 @@ module Assembler
     property offsets : Hash(String, Int32)
 
     # Maintains a mapping from offsets in the offset table
-    # to unresolved labels
+    # to unresolved expressions
     # This allows you to use labels which are defined later on in
     # the file
-    property unresolved_labels : Hash(Int32, {Int32, Label})
+    property unresolved_expressions : Hash(Int32, {Int32, Atomic})
 
     # Maintains a mapping from labels to atomic values
     property aliases : Hash(String, Atomic)
@@ -45,7 +45,7 @@ module Assembler
 
       begin
         builder.build filename, source
-        builder.resolve_unresolved_labels
+        builder.resolve_unresolved_expressions
       rescue e : Exception
         yield e, Bytes.new(0), builder
       end
@@ -58,10 +58,7 @@ module Assembler
       @offsets = {} of String => Int32
       @aliases = {} of String => Atomic
       @load_table = [] of LoadTableEntry
-      @unresolved_labels = {} of Int32 => {Int32, Label}
-
-      # Default load entry
-      add_load_entry 0x00
+      @unresolved_expressions = {} of Int32 => {Int32, Atomic}
 
       # Default size specifiers
       @aliases["byte"] = IntegerLiteral.new 1
@@ -134,9 +131,15 @@ module Assembler
         when LabelDefinition
           register_label stat.label
         when Organize
-          bytes = encode_value 4, stat.address
-          address = get_casted_bytes UInt32, bytes
-          add_load_entry address
+          value = resolve_expression stat.address
+          case value
+          when Int64
+            add_load_entry value
+          when Float64
+            stat.raise "Address resolved to a float, only integers are allowed"
+          when String
+            stat.raise "Address resolved to a string, only integers are allowed"
+          end
         when Include
           include_filename = stat.path.value
           wd = File.dirname filename
@@ -150,259 +153,260 @@ module Assembler
           content = IO::Memory.new content
           build path, content
         when Constant
+          size = resolve_expression stat.size
+
+          unless size.is_a? Int64
+            stat.size.raise "Expression resolved to a #{size.class}, expected an integer"
+          end
+
           register_label stat.name
-          size = encode_size stat.size
-          write_value size, stat.value
+          add_unresolved_expression size.to_i32, stat.value
+          write Bytes.new(size: size)
         when Instruction
           write_instruction stat
         end
       end
     end
 
-    # Try to resolve all unresolved labels
-    def resolve_unresolved_labels
-      @unresolved_labels.each do |address, (size, label)|
-
-        # Target area in which the value has to be filled in
-        target = @output.to_slice[address, size]
-
-        # Check offset table
-        if @offsets.has_key? label.value
-          offset = @offsets[label.value]
-          bytes = get_bytes offset
-          target.copy_from get_trimmed_bytes size, bytes
-          next
-        end
-
-        # Check alias table
-        if @aliases.has_key? label.value
-          node = @aliases[label.value]
-          bytes = encode_value size, node
-          target.copy_from get_trimmed_bytes size, bytes
-          next
-        end
-
-        # The label could not be resolved
-        label.raise "Unknown label #{label.value}"
+    # Tries to resolve all unresolved expressions
+    def resolve_unresolved_expressions
+      @unresolved_expressions.each do |offset, (size, node)|
+        target = @output.to_slice[offset, size]
+        value = resolve_expression node
+        bytes = to_bytes value
+        trimmed = trim_bytes size, bytes
+        target.copy_from trimmed
       end
     end
 
-    # Returns the amount of bytes *size* represents
-    def encode_size(size : Atomic)
-      case size
-      when IntegerLiteral
-        return size.value.to_i32
-      when FloatLiteral
-        size.raise "Can't use float literal as size specifier"
-      when StringLiteral
-        size.raise "Can't use string literal as size specifier"
-      when Label
+    # Adds an entry to the unresolved expressions table
+    def add_unresolved_expression(size, node)
+      @unresolved_expressions[@output.pos] = {size, node}
+    end
 
-        # Check if this label is a valid alias to something
-        if @aliases.has_key? size.value
-          node = @aliases[size.value]
-          return encode_size node
-        end
-
-        if @offsets.has_key? size.value
-          size.raise "Expected label to be a definition"
-        else
-          size.raise "Unknown label #{size.value}"
-        end
-      when UnaryExpression
-        expression = encode_size size.expression
-        case size.operator
-        when :plus
-          return (+ expression)
-        when :minus
-          return (- expression)
-        else
-          size.raise "Bug: Unknown operator #{size.operator}"
-        end
+    # Resolves an expression to either an Int64, Float64 or a String
+    def resolve_expression(node : Atomic)
+      case node
       when BinaryExpression
-        left = encode_size size.left
-        right = encode_size size.right
+        left = resolve_expression node.left
+        right = resolve_expression node.right
+        operator = node.operator
 
-        case size.operator
-        when :plus
-          return left + right
-        when :minus
-          return left - right
-        when :mul
-          return left * right
-        when :div
-          return left / right
+        if left.is_a?(String) && right.is_a?(String)
+          case operator
+          when :plus
+            return left + right
+          else
+            node.raise "Unexpected operator #{node.operator}"
+          end
+        end
+
+        if left.is_a?(Int64) && right.is_a?(Int64)
+          case operator
+          when :plus
+            return left + right
+          when :minus
+            return left - right
+          when :mul
+            return left * right
+          when :div
+            return left / right
+          else
+            node.raise "Unexpected operator #{node.operator}"
+          end
+        end
+
+        if left.is_a?(Float64) && right.is_a?(Float64)
+          case operator
+          when :plus
+            return left + right
+          when :minus
+            return left - right
+          when :mul
+            return left * right
+          when :div
+            return left / right
+          else
+            node.raise "Unexpected operator #{node.operator}"
+          end
+        end
+
+        node.raise "Can't perform #{left.class} #{operator} #{right.class}"
+      when UnaryExpression
+        value = resolve_expression node.expression
+
+        case value
+        when Int64
+          case operator = node.operator
+          when :plus
+            return value.abs
+          when :minus
+            return -(value)
+          else
+            node.raise "Unexpected operator: #{operator}"
+          end
+        when Float64
+          case operator = node.operator
+          when :plus
+            return value.abs
+          when :minus
+            return -(value)
+          else
+            node.raise "Unexpected operator: #{operator}"
+          end
+        when String
+          node.raise "Can't perform unary operation on string"
         else
-          size.raise "Bug: Unknown operator #{size.operator}"
+          node.raise "Could not resolve node into valid type, got #{value.class}"
         end
-      else
-        size.raise "Bug: Unknown node type #{size.class}"
-      end
-    end
-
-    # Encodes *value* into *size* bytes
-    def encode_value(size, value : Atomic)
-      case value
-      when IntegerLiteral
-        bytes = get_bytes value.value
-        return get_trimmed_bytes size, bytes
-      when FloatLiteral
-        bytes = get_bytes value.value
-        return get_trimmed_bytes size, bytes
-      when StringLiteral
-        return get_trimmed_bytes size, value.value.to_slice
       when Label
-
-        # Check both the offset table and the alias table
-        if @offsets.has_key? value.value
-          offset = @offsets[value.value]
-          bytes = get_bytes offset
-          return get_trimmed_bytes size, bytes
+        if @offsets.has_key? node.value
+          return @offsets[node.value].to_i64
         end
 
-        if @aliases.has_key? value.value
-          node = @aliases[value.value]
-          return encode_value size, node
+        if @aliases.has_key? node.value
+          return resolve_expression @aliases[node.value]
         end
 
-        value.raise "Unknown label #{value.value}"
-      else
-        value.raise "Bug: Unknown node type #{value.class}"
-      end
-    end
-
-    # Write *value* into the output stream, with a max size to *size*
-    def write_value(size, value : Atomic)
-      case value
-      when IntegerLiteral
-        bytes = get_bytes value.value
-        write get_trimmed_bytes size, bytes
-      when FloatLiteral
-        bytes = get_bytes value.value
-        write get_trimmed_bytes size, bytes
+        node.raise "Undefined label #{node.value}"
       when StringLiteral
-        write get_trimmed_bytes size, value.value.to_slice
-      when Label
-
-        # Check both the offset table and the alias table
-        if @offsets.has_key? value.value
-          offset = @offsets[value.value]
-          bytes = get_bytes offset
-          write get_trimmed_bytes size, bytes
-          return
-        end
-
-        if @aliases.has_key? value.value
-          node = @aliases[value.value]
-          return write_value size, node
-        end
-
-        # The label wasn't encountered before, so we add it to the
-        # unresolved labels table.
-        #
-        # We also reserve enough bytes for the value
-        # so another subroutine can later fill in the correct value
-        @unresolved_labels[@output.pos] = {size, value}
-        write Bytes.new(size)
+        return node.value
+      when IntegerLiteral
+        return node.value
+      when FloatLiteral
+        return node.value
       else
-        value.raise "Bug: Unknown node type #{value.class}"
+        node.raise "Unknown node type #{node.class}"
       end
     end
 
     # :nodoc:
-    private macro check_args(bytecounts = [] of Int32)
-      assert_count instruction, {{bytecounts.size}}
+    private def assert_count(node, count)
+      name = node.name
+      arg_count = node.arguments.size
+      node.raise "#{name} expected #{count} arguments, got #{arg_count}" if arg_count != count
+    end
+
+    # :nodoc:
+    private macro write_args(bytecounts = [] of Int32)
+      assert_count node, {{bytecounts.size}}
 
       {% for size, index in bytecounts %}
-        write_value {{size}}, instruction.arguments[{{index}}]
+        add_unresolved_expression {{size}}, node.arguments[{{index}}]
+        write Bytes.new {{size}}
       {% end %}
     end
 
-    # :nodoc:
-    private def assert_count(instruction, count)
-      name = instruction.name
-      arg_count = instruction.arguments.size
-      instruction.raise "#{name} expected #{count} arguments, got #{arg_count}" if arg_count != count
-    end
+    # Reserves space for instruction arguments
+    def write_instruction(node)
+      opcode = resolve_expression node.name
 
-    # Encodes an instruction node
-    def write_instruction(instruction : Instruction)
-      opcode = instruction.name.value
-      opcode = Opcode.parse opcode
-
-      # Write the opcode to the instruction stream
-      write Bytes.new 1 { opcode.value }
-
-      # Validate and write all instruction arguments
       case opcode
-      when RPUSH                                then check_args [1]
-      when RPOP                                 then check_args [1]
-      when MOV                                  then check_args [1, 1]
-      when RST                                  then check_args [1]
-      when ADD, SUB, MUL, DIV, IDIV, REM, IREM  then check_args [1, 1, 1]
-      when FADD, FSUB, FMUL, FDIV, FREM, FEXP   then check_args [1, 1, 1]
-      when FLT, FGT                             then check_args [1, 1]
-      when CMP, LT, GT, ULT, UGT                then check_args [1, 1]
-      when SHR, SHL, AND, XOR, OR               then check_args [1, 1, 1]
-      when NOT                                  then check_args [1, 1]
-      when INTTOFP, SINTTOFP, FPTOINT           then check_args [1, 1]
-      when LOAD                                 then check_args [1, 4]
-      when LOADR                                then check_args [1, 1]
-      when LOADS                                then check_args [4, 4]
-      when LOADSR                               then check_args [4, 1]
-      when STORE                                then check_args [4, 1]
-      when READ                                 then check_args [1, 1]
-      when READC                                then check_args [1, 4]
-      when READS                                then check_args [4, 1]
-      when READCS                               then check_args [4, 4]
-      when WRITE                                then check_args [1, 1]
-      when WRITEC                               then check_args [4, 1]
-      when WRITES                               then check_args [1, 4]
-      when WRITECS                              then check_args [4, 4]
-      when COPY                                 then check_args [1, 4, 1]
-      when COPYC                                then check_args [4, 4, 4]
-      when JZ                                   then check_args [4]
-      when JZR                                  then check_args [1]
-      when JMP                                  then check_args [4]
-      when JMPR                                 then check_args [1]
-      when CALL                                 then check_args [4]
-      when CALLR                                then check_args [1]
-      when RET                                  then check_args
-      when NOP                                  then check_args
-      when SYSCALL                              then check_args
+      when Int64
+        bytes = to_bytes opcode
+        trimmed = trim_bytes 1, bytes
+        write trimmed
+      else
+        node.name.raise "Expected mnemonic to resolve to an integer, got #{opcode.class}"
+      end
+
+      opcode = Opcode.new opcode.to_u8
+
+      case opcode
+      when RPUSH                                then write_args [1]
+      when RPOP                                 then write_args [1]
+      when MOV                                  then write_args [1, 1]
+      when RST                                  then write_args [1]
+      when ADD, SUB, MUL, DIV, IDIV, REM, IREM  then write_args [1, 1]
+      when FADD, FSUB, FMUL, FDIV, FREM, FEXP   then write_args [1, 1]
+      when FLT, FGT                             then write_args [1, 1]
+      when CMP, LT, GT, ULT, UGT                then write_args [1, 1]
+      when SHR, SHL, AND, XOR, OR               then write_args [1, 1]
+      when NOT                                  then write_args [1]
+      when INTTOFP, SINTTOFP, FPTOINT           then write_args [1]
+      when LOAD                                 then write_args [1, 4]
+      when LOADR                                then write_args [1, 1]
+      when LOADS                                then write_args [4, 4]
+      when LOADSR                               then write_args [4, 1]
+      when STORE                                then write_args [4, 1]
+      when READ                                 then write_args [1, 1]
+      when READC                                then write_args [1, 4]
+      when READS                                then write_args [4, 1]
+      when READCS                               then write_args [4, 4]
+      when WRITE                                then write_args [1, 1]
+      when WRITEC                               then write_args [4, 1]
+      when WRITES                               then write_args [1, 4]
+      when WRITECS                              then write_args [4, 4]
+      when COPY                                 then write_args [1, 4, 1]
+      when COPYC                                then write_args [4, 4, 4]
+      when JZ                                   then write_args [4]
+      when JZR                                  then write_args [1]
+      when JMP                                  then write_args [4]
+      when JMPR                                 then write_args [1]
+      when CALL                                 then write_args [4]
+      when CALLR                                then write_args [1]
+      when RET                                  then write_args
+      when NOP                                  then write_args
+      when SYSCALL                              then write_args
       when PUSH
-        assert_count instruction, 2
+        assert_count node, 2
 
-        size = instruction.arguments[0]
-        value = instruction.arguments[1]
+        size = resolve_expression node.arguments[0]
 
-        size_bytes = encode_size size
-        write_value 4, size
-        write_value size_bytes, value
+        case size
+        when Int64
+          size_bytes = to_bytes size
+          trimmed = trim_bytes 4, size_bytes
+          write trimmed
+          add_unresolved_expression size.to_i32, node.arguments[1]
+          write Bytes.new size
+        else
+          node.arguments[0].raise "Expected expression to resolve to an integer, got #{size.class}"
+        end
       when LOADI
-        assert_count instruction, 2
+        assert_count node, 2
 
-        reg_arg = instruction.arguments[0]
+        reg_expression = resolve_expression node.arguments[0]
 
-        reg_bytes = encode_value 1, reg_arg
-        reg = Register.new get_casted_bytes UInt8, reg_bytes
-
-        write_value 1, reg_arg
-        write_value reg.bytecount, instruction.arguments[1]
+        case reg_expression
+        when Int64
+          reg = Register.new reg_expression.to_u8
+          write Bytes.new 1 { reg_expression.to_u8 }
+          add_unresolved_expression reg.bytecount, node.arguments[1]
+          write Bytes.new reg.bytecount
+        else
+          node.arguments[0].raise "Expected expression to resolve to an integer, got #{reg_expression.class}"
+        end
       end
     end
 
     # :nodoc:
-    def get_bytes(data : T) forall T
-      slice = Slice(T).new 1, data
-      pointer = Pointer(UInt8).new slice.to_unsafe.address
-      size = sizeof(T)
-      bytes = Bytes.new pointer, size
-      bytes
+    def to_bytes(data : T) forall T
+      {% if T.union? %}
+        {% for typ in T.union_types %}
+          if data.is_a?({{typ}})
+            slice = Slice({{typ}}).new 1, data
+            ptr = slice.to_unsafe.as(UInt8*)
+            size = sizeof({{typ}})
+            bytes = Bytes.new ptr, size
+            return bytes
+          end
+        {% end %}
+
+        # This should never happen, it's just here to make
+        # the compiler happy
+        return Bytes.new 0
+      {% else %}
+        slice = Slice(T).new 1, data
+        ptr = slice.to_unsafe.as(UInt8*)
+        size = sizeof(T)
+        bytes = Bytes.new ptr, size
+        return bytes
+      {% end %}
     end
 
     # Trims or zero-extends *bytes* to *size*
-    def get_trimmed_bytes(size, bytes : Bytes)
+    def trim_bytes(size, bytes : Bytes)
       if size > bytes.size
         encoded = Bytes.new size
         encoded.copy_from bytes
@@ -413,7 +417,7 @@ module Assembler
     end
 
     # Return a *T* value created from *source*
-    def get_casted_bytes(x : T.class, source : Bytes) forall T
+    def cast_bytes(x : T.class, source : Bytes) forall T
       bytes = get_trimmed_bytes sizeof(T), source
       ptr = Pointer(T).new bytes.to_unsafe.address
       ptr[0]
@@ -423,6 +427,11 @@ module Assembler
     def register_label(label : Label)
       if @offsets.has_key?(label.value) || @aliases.has_key?(label.value)
         label.raise "Can't redefine #{label.value}"
+      end
+
+      if @load_table.size == 0
+        @offsets[label.value] = @output.pos
+        return
       end
 
       # Get the current load entry
@@ -444,18 +453,14 @@ module Assembler
       @load_table << LoadTableEntry.new @output.pos, 0, address.to_i32
     end
 
-    # Grows the size of the last load entry by *size*
-    def grow_load_entry_size(size)
+    # Write bytes into the output
+    def write(bytes : Bytes)
+      @output.write bytes
+
       if @load_table.size > 0
         last_offset = @load_table[-1].offset
         @load_table[-1].size = @output.pos - last_offset
       end
-    end
-
-    # Write bytes into the output
-    def write(bytes : Bytes)
-      @output.write bytes
-      grow_load_entry_size bytes.size
     end
 
     # Encode the header section of the program
