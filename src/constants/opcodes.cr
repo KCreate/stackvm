@@ -80,20 +80,20 @@ module Constants
     0, # loadi (this is calculated in the vm itself)
     2, # rst
 
-    4, # add
-    4, # sub
-    4, # mul
-    4, # div
-    4, # idiv
-    4, # rem
-    4, # irem
+    3, # add
+    3, # sub
+    3, # mul
+    3, # div
+    3, # idiv
+    3, # rem
+    3, # irem
 
-    4, # fadd
-    4, # fsub
-    4, # fmul
-    4, # fdiv
-    4, # frem
-    4, # fexp
+    3, # fadd
+    3, # fsub
+    3, # fmul
+    3, # fdiv
+    3, # frem
+    3, # fexp
 
     3, # flt
     3, # fgt
@@ -104,16 +104,16 @@ module Constants
     3, # ult
     3, # ugt
 
-    4, # shr
-    4, # shl
-    4, # and
-    4, # xor
-    4, # or
-    3, # not
+    3, # shr
+    3, # shl
+    3, # and
+    3, # xor
+    3, # or
+    2, # not
 
-    3, # inttofp
-    3, # sinttofp
-    3, # fptoint
+    2, # inttofp
+    2, # sinttofp
+    2, # fptoint
 
     6, # load
     3, # loadr

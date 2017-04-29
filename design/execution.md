@@ -86,7 +86,7 @@ The program below calculates the sum of `25` and `45` and saves the result in th
 .label _add
     load calc1, 12              ; load the first argument into calc1
     load calc2, 8               ; load the second argument into calc2
-    add calc1, calc1, calc2     ; add calc2 to calc1
+    add calc1, calc2            ; add calc2 to calc1
     store calc1, 16             ; write to return value
     ret                         ; return from the subroutine
 ```

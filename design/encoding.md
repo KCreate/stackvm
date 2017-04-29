@@ -77,7 +77,7 @@ This is how they would ultimately be laid out in memory:
 |             |
 |             |
 |             |
-+-------------+ <- 0x000002aa
++-------------+ <- 0x00337a00
 | Segment 0   |
 |             |
 |             |
