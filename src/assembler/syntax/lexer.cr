@@ -52,7 +52,13 @@ module Assembler
       when '*'
         read :mul
       when '/'
-        read :div
+        case read
+        when '*'
+          read
+          consume_multiline_comment
+        else
+          @token.type = :div
+        end
       when '('
         read :leftparen
       when ')'
@@ -208,6 +214,25 @@ module Assembler
 
       @token.type = :comment
       @token.value = @frame.to_s[0..-3]
+    end
+
+    # Consumes a multiline comment
+    private def consume_multiline_comment
+      loop do
+        case current_char
+        when '*'
+          case read
+          when '/'
+            read
+            break
+          end
+        else
+          read
+        end
+      end
+
+      @token.type = :comment
+      @token.value = @frame.to_s[2..-4]
     end
 
     # Consumes an identifier
