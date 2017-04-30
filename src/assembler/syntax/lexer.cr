@@ -53,6 +53,8 @@ module Assembler
         read :mul
       when '/'
         case read
+        when '/'
+          consume_comment
         when '*'
           read
           consume_multiline_comment
