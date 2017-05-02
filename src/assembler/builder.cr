@@ -173,7 +173,7 @@ module Assembler
       @unresolved_expressions.each do |offset, (size, node)|
         target = @output.to_slice[offset, size]
         value = resolve_expression node
-        bytes = to_bytes value
+        bytes = encode_to_bytes value
         trimmed = trim_bytes size, bytes
         target.copy_from trimmed
       end
@@ -403,6 +403,15 @@ module Assembler
         bytes = Bytes.new ptr, size
         return bytes
       {% end %}
+    end
+
+    def encode_to_bytes(data : T) forall T
+      case data
+      when String
+        return data.to_slice
+      else
+        return to_bytes data
+      end
     end
 
     # Trims or zero-extends *bytes* to *size*
