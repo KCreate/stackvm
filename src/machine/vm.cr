@@ -164,7 +164,7 @@ module VM
       @memory.to_unsafe.clear MEMORY_SIZE
 
       if header.load_table.size == 0
-        segment = data[header.total_size + 0, data.size]
+        segment = data + header.total_size
         mem_write 0, segment
       end
 
