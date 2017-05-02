@@ -60,6 +60,8 @@ module Assembler
       @load_table = [] of LoadTableEntry
       @unresolved_expressions = {} of Int32 => {Int32, Atomic}
 
+      add_load_entry 0x00
+
       # Default size specifiers
       @aliases["byte"] = IntegerLiteral.new 1
       @aliases["word"] = IntegerLiteral.new 2
