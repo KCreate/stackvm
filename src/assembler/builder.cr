@@ -313,41 +313,41 @@ module Assembler
       opcode = Opcode.new opcode.to_u8
 
       case opcode
-      when RPUSH                                then write_args [1]
-      when RPOP                                 then write_args [1]
-      when MOV                                  then write_args [1, 1]
-      when RST                                  then write_args [1]
-      when ADD, SUB, MUL, DIV, IDIV, REM, IREM  then write_args [1, 1]
-      when FADD, FSUB, FMUL, FDIV, FREM, FEXP   then write_args [1, 1]
-      when FLT, FGT                             then write_args [1, 1]
-      when CMP, LT, GT, ULT, UGT                then write_args [1, 1]
-      when SHR, SHL, AND, XOR, OR               then write_args [1, 1]
-      when NOT                                  then write_args [1]
-      when INTTOFP, SINTTOFP, FPTOINT           then write_args [1]
-      when LOAD                                 then write_args [1, 4]
-      when LOADR                                then write_args [1, 1]
-      when LOADS                                then write_args [4, 4]
-      when LOADSR                               then write_args [4, 1]
-      when STORE                                then write_args [4, 1]
-      when READ                                 then write_args [1, 1]
-      when READC                                then write_args [1, 4]
-      when READS                                then write_args [4, 1]
-      when READCS                               then write_args [4, 4]
-      when WRITE                                then write_args [1, 1]
-      when WRITEC                               then write_args [4, 1]
-      when WRITES                               then write_args [1, 4]
-      when WRITECS                              then write_args [4, 4]
-      when COPY                                 then write_args [1, 4, 1]
-      when COPYC                                then write_args [4, 4, 4]
-      when JZ                                   then write_args [4]
-      when JZR                                  then write_args [1]
-      when JMP                                  then write_args [4]
-      when JMPR                                 then write_args [1]
-      when CALL                                 then write_args [4]
-      when CALLR                                then write_args [1]
-      when RET                                  then write_args
-      when NOP                                  then write_args
-      when SYSCALL                              then write_args
+      when RPUSH                               then write_args [1]
+      when RPOP                                then write_args [1]
+      when MOV                                 then write_args [1, 1]
+      when RST                                 then write_args [1]
+      when ADD, SUB, MUL, DIV, IDIV, REM, IREM then write_args [1, 1]
+      when FADD, FSUB, FMUL, FDIV, FREM, FEXP  then write_args [1, 1]
+      when FLT, FGT                            then write_args [1, 1]
+      when CMP, LT, GT, ULT, UGT               then write_args [1, 1]
+      when SHR, SHL, AND, XOR, OR              then write_args [1, 1]
+      when NOT                                 then write_args [1]
+      when INTTOFP, SINTTOFP, FPTOINT          then write_args [1]
+      when LOAD                                then write_args [1, 4]
+      when LOADR                               then write_args [1, 1]
+      when LOADS                               then write_args [4, 4]
+      when LOADSR                              then write_args [4, 1]
+      when STORE                               then write_args [4, 1]
+      when READ                                then write_args [1, 1]
+      when READC                               then write_args [1, 4]
+      when READS                               then write_args [4, 1]
+      when READCS                              then write_args [4, 4]
+      when WRITE                               then write_args [1, 1]
+      when WRITEC                              then write_args [4, 1]
+      when WRITES                              then write_args [1, 4]
+      when WRITECS                             then write_args [4, 4]
+      when COPY                                then write_args [1, 4, 1]
+      when COPYC                               then write_args [4, 4, 4]
+      when JZ                                  then write_args [4]
+      when JZR                                 then write_args [1]
+      when JMP                                 then write_args [4]
+      when JMPR                                then write_args [1]
+      when CALL                                then write_args [4]
+      when CALLR                               then write_args [1]
+      when RET                                 then write_args
+      when NOP                                 then write_args
+      when SYSCALL                             then write_args
       when PUSH
         assert_count node, 2
 
@@ -503,5 +503,4 @@ module Assembler
       executable
     end
   end
-
 end

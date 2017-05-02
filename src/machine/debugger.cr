@@ -221,5 +221,4 @@ module VM
       STDERR.puts "#{"Error:".colorize(:red).bold} #{message}"
     end
   end
-
 end

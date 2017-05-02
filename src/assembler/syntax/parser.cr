@@ -2,7 +2,6 @@ require "./ast.cr"
 require "./token.cr"
 
 module Assembler
-
   class Parser
     getter tokens : Array(Token)
     getter current : Token
@@ -40,7 +39,9 @@ module Assembler
     end
 
     private def parse_statement
-      while @current.type == :newline; read; end
+      while @current.type == :newline
+        read
+      end
 
       case @current.type
       when :dot
@@ -263,7 +264,5 @@ module Assembler
       #{message}
       ERR
     end
-
   end
-
 end

@@ -1,5 +1,4 @@
 module Constants
-
   enum Opcode : UInt8
     RPUSH
     RPOP
@@ -89,60 +88,59 @@ module Constants
     3, # irem
 
     3, # fadd
-    3, # fsub
+    3, #  fsub
     3, # fmul
     3, # fdiv
-    3, # frem
+    3, #  frem
     3, # fexp
 
     3, # flt
-    3, # fgt
+    3, #  fgt
 
     3, # cmp
-    3, # lt
+    3, #  lt
     3, # gt
     3, # ult
-    3, # ugt
+    3, #  ugt
 
     3, # shr
-    3, # shl
+    3, #  shl
     3, # and
-    3, # xor
-    3, # or
-    2, # not
+    3, #  xor
+    3, #  or
+    2, #  not
 
     2, # inttofp
     2, # sinttofp
     2, # fptoint
 
     6, # load
-    3, # loadr
+    3, #  loadr
     9, # loads
-    6, # loadsr
-    6, # store
+    6, #  loadsr
+    6, #  store
     0, # push (this is calculated in the vm itself)
 
-    3, # read
-    6, # readc
-    6, # reads
-    9, # readcs
-    3, # write
-    6, # writec
-    6, # writes
-    9, # writecs
-    7, # copy
+    3,  #  read
+    6,  #  readc
+    6,  #  reads
+    9,  # readcs
+    3,  # write
+    6,  #  writec
+    6,  # writes
+    9,  # writecs
+    7,  #  copy
     13, # copyc
 
     5, # jz
-    2, # jzr
-    5, # jmp
+    2, #  jzr
+    5, #  jmp
     2, # jmpr
-    5, # call
-    2, # callr
+    5, #  call
+    2, #  callr
     1, # ret
 
-    1, # nop
-    1 # syscall
+    1, #  nop
+    1, #  syscall
   ] of Int32
-
 end

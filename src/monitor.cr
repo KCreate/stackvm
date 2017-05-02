@@ -2,7 +2,6 @@ require "sdl"
 require "./constants/constants.cr"
 
 module VM
-
   class Monitor
     include SDL
     include Constants
@@ -46,7 +45,5 @@ module VM
       end
       @renderer.present
     end
-
   end
-
 end

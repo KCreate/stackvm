@@ -1,5 +1,4 @@
 module Assembler
-
   class Location
     getter row : Int32
     getter column : Int32
@@ -12,5 +11,4 @@ module Assembler
       io << filename << ":" << row << ":" << column
     end
   end
-
 end

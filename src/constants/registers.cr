@@ -1,7 +1,6 @@
 require "./flags.cr"
 
 module Constants
-
   enum Register : UInt8
     {% for i in 0..59 %}
       R{{i}}
@@ -38,8 +37,8 @@ module Constants
 
     def bytecount
       case mode
-      when Flag::BYTE.value then 1
-      when Flag::WORD.value then 2
+      when Flag::BYTE.value  then 1
+      when Flag::WORD.value  then 2
       when Flag::DWORD.value then 4
       when Flag::QWORD.value then 8
       else
@@ -47,5 +46,4 @@ module Constants
       end
     end
   end
-
 end

@@ -1,7 +1,6 @@
 require "./location.cr"
 
 module Assembler
-
   class Token
     property type : Symbol
     property value : String
@@ -18,5 +17,4 @@ module Assembler
       io << "]"
     end
   end
-
 end

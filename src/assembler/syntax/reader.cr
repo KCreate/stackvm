@@ -1,5 +1,4 @@
 module Assembler
-
   class Reader
     getter io : IO::Memory
     getter current_char : Char
@@ -55,5 +54,4 @@ module Assembler
       @current_char
     end
   end
-
 end

@@ -19,10 +19,10 @@ module StackVM
       end
 
       case command = arguments.shift
-      when "run" then run arguments
-      when "build" then build arguments
+      when "run"     then run arguments
+      when "build"   then build arguments
       when "monitor" then monitor arguments
-      when "help" then help
+      when "help"    then help
       when "version" then version
       else
         error "unknown command: #{command}"
@@ -309,5 +309,4 @@ module StackVM
       STDOUT.puts "#{"#{status}:".colorize(:green).bold} #{message}"
     end
   end
-
 end

@@ -2,7 +2,6 @@ require "./reader.cr"
 require "./token.cr"
 
 module Assembler
-
   class Lexer < Reader
     property token : Token
     property tokens : Array(Token)
@@ -259,5 +258,4 @@ module Assembler
       raise "Unexpected char \"#{current_char}\" at #{@token.location}"
     end
   end
-
 end
