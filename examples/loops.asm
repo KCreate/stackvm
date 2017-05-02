@@ -15,29 +15,29 @@
   loadi s_zero,     0
 
   ; print the welcome and description messages
-  push t_size,      10
   push t_address,   msg_welcome
+  push t_size,      10
   push t_syscall,   sys_write
   syscall
 
-  push t_size,      39
   push t_address,   msg_description
+  push t_size,      39
   push t_syscall,   sys_write
   syscall
 
 .label loop
 
   ; print the current number
-  push t_register,  counter
-  push t_syscall,   sys_puts
+  push t_register, counter
+  push t_syscall, sys_puts
   syscall
 
   ; exit if zero was reached
-  cmp counter,      s_zero
+  cmp counter, s_zero
   jz _exit
 
   ; decrement the counter
-  sub counter,      counter, s_one
+  sub counter, s_one
 
   ; repeat
   jmp loop
@@ -46,8 +46,8 @@
 .label _exit
 
   ; write the goodbye message
-  push t_size,      10
   push t_address,   msg_goodbye
+  push t_size,      10
   push t_syscall,   sys_write
   syscall
 

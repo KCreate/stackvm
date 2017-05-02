@@ -23,7 +23,7 @@
   loadi r_calc,          0
   loadi r_memsize,       memory_size
 
-  sub r_vram_offset, r_vram_offset, r_one ; correct offset pointer
+  sub r_vram_offset, r_one ; correct offset pointer
 
   jmp loop
 
@@ -31,7 +31,7 @@
 .label loop
 
   ; increment the base pointer
-  add r_vram_offset, r_vram_offset, r_one         ; increment the offset
+  add r_vram_offset, r_one         ; increment the offset
 
   ; check if we overflowed the vram section
   ; if we did, we will reset our index to zero
@@ -41,7 +41,7 @@
 
   ; increment the pixel at the current offset
   read r_calc, r_vram_offset                      ; read the current pixel
-  add r_calc, r_calc, r_increment                 ; increment the current pixel
+  add r_calc, r_increment                 ; increment the current pixel
   write r_vram_offset, r_calc                     ; update the pixel
 
   jmp loop

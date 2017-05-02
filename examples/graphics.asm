@@ -19,11 +19,11 @@
   ; calculate offset into vram
   loadi gfx_draw_pixel_offset, VRAM_ADDRESS
   load GFX_TMP, gfx_draw_pixel_arg_x
-  add gfx_draw_pixel_offset, gfx_draw_pixel_offset, GFX_TMP
+  add gfx_draw_pixel_offset, GFX_TMP
   load GFX_TMP, gfx_draw_pixel_arg_y
   loadi GFX_TMP2, VRAM_WIDTH
-  mul GFX_TMP, GFX_TMP, GFX_TMP2
-  add gfx_draw_pixel_offset, gfx_draw_pixel_offset, GFX_TMP
+  mul GFX_TMP, GFX_TMP2
+  add gfx_draw_pixel_offset, GFX_TMP
 
   ; write the color
   load GFX_TMP_BYTE, gfx_draw_pixel_arg_color

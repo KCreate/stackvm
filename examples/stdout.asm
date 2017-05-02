@@ -1,9 +1,10 @@
+.org 0x00
 .label entry_addr
 .label main
 
-  push t_size,      19
   push t_address,   myconst
-  push t_syscall,   sys_print
+  push t_size,      12
+  push t_syscall,   sys_write
   syscall
 
   push float,       0.1

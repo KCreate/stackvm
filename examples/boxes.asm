@@ -6,13 +6,13 @@
 
 .label setup
 .label entry_addr
-  loadi counter_x,  vram_width
-  loadi counter_y,  vram_height
+  loadi counter_x, vram_width
+  loadi counter_y, vram_height
   rst s_zero
-  loadi s_one,      1
+  loadi s_one, 1
 
-  sub counter_x, counter_x, s_one
-  sub counter_y, counter_y, s_one
+  sub counter_x, s_one
+  sub counter_y, s_one
 
   push dword, msg_welcome
   push dword, 29
@@ -54,13 +54,13 @@
   cmp counter_x, s_zero
   jz br1
 
-  sub counter_x, counter_x, s_one
+  sub counter_x, s_one
 
   jmp br2
 .label br1
-  sub counter_y, counter_y, s_one
+  sub counter_y, s_one
   loadi counter_x, vram_width
-  sub counter_x, counter_x, s_one
+  sub counter_x, s_one
 
 .label br2
 
