@@ -32,17 +32,21 @@ module Assembler
       mod = Module.new.at @current.location
 
       until @current.type == :eof
+        while @current.type == :newline
+          read
+        end
+
         mod.statements << parse_statement
+
+        while @current.type == :newline
+          read
+        end
       end
 
       mod
     end
 
     private def parse_statement
-      while @current.type == :newline
-        read
-      end
-
       case @current.type
       when :dot
         expect :ident
