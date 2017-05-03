@@ -268,8 +268,32 @@ module VM
         op_frem ip
       when Opcode::FEXP
         op_fexp ip
+      when Opcode::FLT
+        op_flt ip
+      when Opcode::FGT
+        op_fgt ip
       when Opcode::CMP
         op_cmp ip
+      when Opcode::LT
+        op_lt ip
+      when Opcode::GT
+        op_gt ip
+      when Opcode::ULT
+        op_ult ip
+      when Opcode::UGT
+        op_ugt ip
+      when Opcode::SHR
+        op_shr ip
+      when Opcode::SHL
+        op_shl ip
+      when Opcode::AND
+        op_and ip
+      when Opcode::XOR
+        op_xor ip
+      when Opcode::OR
+        op_or ip
+      when Opcode::NOT
+        op_not ip
       when Opcode::INTTOFP
         op_inttofp ip
       when Opcode::SINTTOFP
