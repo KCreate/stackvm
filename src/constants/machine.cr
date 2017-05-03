@@ -10,10 +10,10 @@ module Constants
   MACHINE_INTERNALS_PTR = 0x00400000
 
   # Size of the machine internals segment
-  MACHINE_INTERNALS_SIZE = 3_767_278
+  MACHINE_INTERNALS_SIZE = 3_767_274
 
   # Address of the interrupt handler
-  INTERRUPT_HANDLER_ADDRESS = 0x00797beb
+  INTERRUPT_HANDLER_ADDRESS = 0x00797bea
 
   # Address of interrupt memory
   INTERRUPT_MEMORY = 0x00797bee
