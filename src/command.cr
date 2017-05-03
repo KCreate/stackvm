@@ -248,30 +248,29 @@ module StackVM
         exit 1
       end
 
-      file = File.open filename, "r"
+      file = File.open filename, "r+"
 
       unless file.size == Constants::MEMORY_SIZE
         error "Input file needs to be exactly #{Constants::MEMORY_SIZE} bytes"
         exit 1
       end
 
-      ptr = LibC.mmap(nil, Constants::MEMORY_SIZE, LibC::PROT_READ, LibC::MAP_SHARED, file.fd, 0)
+      prot = LibC::PROT_READ | LibC::PROT_WRITE
+      ptr = LibC.mmap(nil, Constants::MEMORY_SIZE, prot, LibC::MAP_SHARED, file.fd, 0)
 
       if ptr == Pointer(Void).new -1
         error "Errno(#{Errno.value}): Could not mmap #{filename} into memory"
         exit 1
       end
 
-      size = Constants::VRAM_SIZE
-      address = Constants::VRAM_ADDRESS
-      monitor_input = Bytes.new(ptr.as(UInt8*) + address, size)
+      monitor_input = Bytes.new(ptr.as(UInt8*), MEMORY_SIZE)
 
-      puts "memory monitor at #{address}"
+      puts "memory monitor at #{ptr}"
 
       monitor = VM::Monitor.new "Main Monitor", monitor_input
       monitor.start
 
-      LibC.munmap(monitor_input.to_unsafe.as(Void*), size)
+      LibC.munmap(ptr, Constants::MEMORY_SIZE)
     end
 
     def help

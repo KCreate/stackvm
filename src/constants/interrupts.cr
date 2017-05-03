@@ -1,0 +1,8 @@
+module Constants
+  INTERRUPT_KEYBOARD = 0_u8
+
+  # Keyboard interrupt offsets
+  INTERRUPT_KEYBOARD_SYM     = 0x00797bee
+  INTERRUPT_KEYBOARD_MOD     = 0x00797bf2
+  INTERRUPT_KEYBOARD_KEYDOWN = 0x00797bf4
+end

@@ -199,8 +199,18 @@ module VM
 
     # Runs a single cpu cycle
     def cycle
+
+      # Check if an interrupt happened
+      int_status = mem_read UInt8, INTERRUPT_STATUS
+
+      if int_status != 0
+        handle_interrupt
+      end
+
+      # Execute the current instruction
       instruction = fetch
       old_ip = reg_read UInt32, Register::IP.dword
+
       execute instruction, old_ip
 
       # Only increment the IP if the last instruction didn't modify it
@@ -539,6 +549,21 @@ module VM
     # :nodoc:
     private def invalid_syscall(syscall : Syscall)
       raise Error.new ErrorCode::INVALID_SYSCALL, "Unknown sycall: #{syscall}"
+    end
+
+    # Handle an interrupt
+    private def handle_interrupt
+
+      # Reset the interrupt status flag
+      mem_write INTERRUPT_STATUS, Bytes.new 1 { 0_u8 }
+
+      # Read the address of the interrupt handler
+      int_handler = mem_read UInt32, INTERRUPT_HANDLER_ADDRESS
+
+      # Push a stack frame to the current instruction
+      stack_write Bytes.new 4 { 0_u8 }
+      push_stack_frame reg_read(UInt32, Register::IP.dword)
+      reg_write Register::IP.dword, int_handler
     end
 
     # Executes a rpush instruction

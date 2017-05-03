@@ -120,6 +120,10 @@ module Assembler
       @aliases["vram_size"] = IntegerLiteral.new VRAM_SIZE
       @aliases["vram_width"] = IntegerLiteral.new VRAM_WIDTH
       @aliases["vram_height"] = IntegerLiteral.new VRAM_HEIGHT
+      @aliases["interrupt_keyboard"] = IntegerLiteral.new VRAM_HEIGHT
+      @aliases["interrupt_keyboard_sym"] = IntegerLiteral.new INTERRUPT_KEYBOARD_SYM
+      @aliases["interrupt_keyboard_mod"] = IntegerLiteral.new INTERRUPT_KEYBOARD_MOD
+      @aliases["interrupt_keyboard_keydown"] = IntegerLiteral.new INTERRUPT_KEYBOARD_KEYDOWN
     end
 
     def build(filename, source)
