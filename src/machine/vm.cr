@@ -503,6 +503,22 @@ module VM
       reg_write Register::FLAGS.byte, set ? 1 : 0
     end
 
+    # Pushes a stack frame for the return address *retaddr*
+    def push_stack_frame(retaddr : UInt32)
+      frameptr = reg_read UInt32, Register::FP.dword
+
+      # Base address of this stack frame. This is a pointer to a dword which will
+      # later be populated with the old frame pointer
+      stack_frame_baseadr = (reg_read UInt32, Register::SP.dword) - 8
+
+      # Push the new stack frame
+      stack_write retaddr
+      stack_write frameptr
+
+      # Update FP and IP
+      reg_write Register::FP.dword, stack_frame_baseadr
+    end
+
     # :nodoc:
     private def illegal_memory_access(address)
       ip = reg_read UInt32, Register::IP.dword
@@ -962,20 +978,8 @@ module VM
     # ```
     private def op_call(ip)
       address = mem_read UInt32, ip + 1
-      frameptr = reg_read UInt32, Register::FP.dword
       return_address = ip + decode_instruction_length(fetch)
-
-      # Base address of this stack frame
-      # Is a pointer to a qword which will later
-      # be populated with the old frame pointer
-      stack_frame_baseadr = (reg_read UInt32, Register::SP.dword) - 8
-
-      # Push the new stack frame
-      stack_write return_address
-      stack_write frameptr
-
-      # Update FP and IP
-      reg_write Register::FP.dword, stack_frame_baseadr
+      push_stack_frame return_address.to_u32
       reg_write Register::IP.dword, address
     end
 
@@ -993,20 +997,8 @@ module VM
     private def op_callr(ip)
       target = Register.new mem_read(UInt8, ip + 1)
       address = reg_read UInt32, target
-      frameptr = reg_read UInt32, Register::FP.dword
       return_address = ip + decode_instruction_length(fetch)
-
-      # Base address of this stack frame
-      # Is a pointer to a qword which will later
-      # be populated with the old frame pointer
-      stack_frame_baseadr = (reg_read UInt32, Register::SP.dword) - 8
-
-      # Push the new stack frame
-      stack_write return_address
-      stack_write frameptr
-
-      # Update FP and IP
-      reg_write Register::FP.dword, stack_frame_baseadr
+      push_stack_frame return_address.to_u32
       reg_write Register::IP.dword, address
     end
 
