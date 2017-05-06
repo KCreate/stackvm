@@ -15,5 +15,7 @@ module Constants
     INVALID_SYSCALL       = 0x4
     EXECUTABLE_TOO_BIG    = 0x5
     INVALID_EXECUTABLE    = 0x6
+    ALLOCATION_FAILURE    = 0x7
+    INTERNAL_FAILURE      = 0x8
   end
 end
