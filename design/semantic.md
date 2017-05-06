@@ -22,6 +22,7 @@ For the specification on binary encoding, see the [encoding.md](./encoding.md) f
 | `INVALID_SYSCALL`       | `0x04` | Unknown syscall id                    |
 | `EXECUTABLE_TOO_BIG`    | `0x05` | Executable won't fit into memory      |
 | `INVALID_EXECUTABLE`    | `0x06` | Executable is invalid                 |
+| `ALLOCATION_FAILURE`    | `0x07` | Could not allocate memory for smth    |
 
 ## Registers
 
