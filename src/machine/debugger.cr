@@ -20,11 +20,13 @@ module VM
         input = Readline.readline prompt, true
         args = (input || "help").split
 
+        break if input == nil
+
         if args.size == 0
           next command "help", [] of String
         end
 
-        if args[0] == "quit" || args[0] == "q"
+        if args[0] == "quit" || args[0] == "q" || args[0] == "exit"
           break
         end
 
@@ -189,7 +191,7 @@ module VM
       Debugger help page
 
       h, help                            show this page
-      q, quit                            quit the debugger
+      q, quit, exit                      quit the debugger
       s, stack                           print a hexdump of the stack
       r, registers                       print the contents of all registers
       c, cycle        n                  run *n* cpu cycles (default 1)
