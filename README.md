@@ -1,4 +1,4 @@
-# Virtual Machine
+# StackVM
 
 This is my try at writing a virtual machine from scratch. There are four main design documents
 which describe the machine's functionality and how the binary format should look like.
